@@ -1,0 +1,72 @@
+[
+  {
+    "id": 0,
+    "name": "Gold Coin",
+    "description": "Used to buy items",
+    "category": "CURRENCY",
+    "effect": "NOT_TRANSFERABLE"
+  },
+  {
+    "id": 1,
+    "name": "Diamond",
+    "description": "Used to buy items",
+    "category": "CURRENCY",
+    "effect": "TRANSFERABLE"
+  },
+  {
+    "id": 2,
+    "name": "Source Number",
+    "description": "Used to buy items",
+    "category": "CURRENCY",
+    "effect": "TRANSFERABLE"
+  },
+  {
+    "id": 3,
+    "name": "Source Number Crystal",
+    "description": "Used to fully restore a sprite's status (100%)",
+    "category": "MEDICINE",
+    "effect": "RESTORE_FULL"
+  },
+  {
+    "id": 4,
+    "name": "Source Number Powder",
+    "description": "Used to partially restore a sprite's status (50%)",
+    "category": "MEDICINE",
+    "effect": "RESTORE_HALF"
+  },
+  {
+    "id": 5,
+    "name": "Escape Scroll",
+    "description": "Used to allow a sprite to escape from battle",
+    "category": "SCROLL",
+    "effect": "ESCAPE"
+  },
+  {
+    "id": 6,
+    "name": "Low-Level Ball",
+    "description": "Used to capture and store sprites",
+    "category": "BALL",
+    "effect": "CAPTURE_LOW"
+  },
+  {
+    "id": 7,
+    "name": "Mid-Level Ball",
+    "description": "Used to capture and store sprites (higher success rate)",
+    "category": "BALL",
+    "effect": "CAPTURE_MID"
+  },
+  {
+    "id": 8,
+    "name": "High-Level Ball",
+    "description": "Used to capture and store sprites (highest success rate)",
+    "category": "BALL",
+    "effect": "CAPTURE_HIGH"
+  },
+  {
+    "id": 9,
+    "name": "Treasure Chest",
+    "description": "Used to capture and store sprites (highest success rate)",
+    "category": "TREASURE",
+    "effect": "SPECIAL_CAPTURE"
+  }
+]

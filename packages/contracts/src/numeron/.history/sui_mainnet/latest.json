@@ -1,0 +1,28 @@
+{
+  "projectName": "numeron",
+  "network": "mainnet",
+  "packageId": "0x30f4de5431642884d1de5705d40be1579b48fd44af1334ad16e53f4aad7f421d",
+  "schemaId": "0x45363f9f43e8bdb407633502287582c44c0a365f89ade95e8598b4a7649db9a7",
+  "schemas": {
+    "encounter": "StorageMap<address, EncounterInfo>",
+    "player": "StorageMap<address, bool>",
+    "obstruction": "StorageMap<Position, bool>",
+    "encounter_trigger": "StorageMap<Position, bool>",
+    "map_layer": "StorageDoubleMap<u64, String, vector<u8>>",
+    "map_config": "StorageMap<u64, MapConfig>",
+    "position": "StorageMap<address, Position>",
+    "monster": "StorageMap<u256, MonsterInfo>",
+    "next_monster_id": "StorageValue<u256>",
+    "next_item_id": "StorageValue<u256>",
+    "monster_owned_by": "StorageMap<u256, address>",
+    "balance": "StorageDoubleMap<address, u256, u256>",
+    "item_metadata": "StorageMap<u256, ItemMetadata>",
+    "move_item_drop_config": "StorageValue<ItemDrop>",
+    "chest_item_drop_config": "StorageValue<ItemDrop>",
+    "encounter_item_drop_config": "StorageValue<ItemDrop>",
+    "item_craft_path": "StorageMap<u256, CraftPath>",
+    "teleport_point": "StorageMap<Position, Position>"
+  },
+  "upgradeCap": "0xeb0374cc2d4849f52eccde66eb4b718ee225b5b71d80a3d82e9f662d57b08292",
+  "version": 1
+}
