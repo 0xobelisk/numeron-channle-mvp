@@ -1,8 +1,8 @@
 {
   "projectName": "numeron",
   "network": "localnet",
-  "packageId": "0x8e87e0583de6142a608daa78d12515e8fc1b3197496148e5e817ddfba13d4dc5",
-  "schemaId": "0xae5a702cafea9a8f12bfaea8f1f3e1bf6fc5912b3befc99b09ed64dc78fb707d",
+  "packageId": "0x0f4ebe2a0e0ee83ece5d55f0349eedf1202b05261f1c86fb1272a757f5ef35c5",
+  "schemaId": "0x4e2e5481cf989a4edacc09f077061723d813175e59fecc847468fec2e537f0f9",
   "schemas": {
     "encounter": "StorageMap<address, EncounterInfo>",
     "encounter_monster": "StorageValue<vector<MonsterInfo>>",
@@ -31,6 +31,6 @@
     "key_price": "StorageValue<u256>",
     "order_fee_rate": "StorageValue<u256>"
   },
-  "upgradeCap": "0x2e8c16d0a6eeae1ab575e56f922686b27951a809f54d70f17f7ef73f12ad2be5",
+  "upgradeCap": "0x4b512693a6afd75c77c9bad53bd03fce4991731cff1be4ec856f7f220704c75b",
   "version": 1
 }
