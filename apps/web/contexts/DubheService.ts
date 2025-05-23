@@ -132,7 +132,7 @@ export class DubheService {
     if (!address) {
       return 0;
     }
-    const balance = await this.dubhe.getBalance(coinType);
+    const balance = await this.dubhe.balanceOf(address, coinType);
     return String(BigInt(balance.totalBalance) / BigInt(10 ** 9));
   }
 
