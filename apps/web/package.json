@@ -24,10 +24,9 @@
     "prod:mainnet": "pnpm account:gen && pnpm check-balance mainnet"
   },
   "dependencies": {
-    "@0xobelisk/sui-client": "^1.2.0-pre.16",
-    "@0xobelisk/sui-cli": "^1.2.0-pre.16",
-    "@0xobelisk/sui-common": "^1.2.0-pre.16",
-    "@0xobelisk/sui-indexer": "^1.2.0-pre.16",
+    "@0xobelisk/sui-client": "^1.2.0-pre.78",
+    "@0xobelisk/sui-cli": "^1.2.0-pre.78",
+    "@0xobelisk/sui-common": "^1.2.0-pre.78",
     "contracts": "workspace:*",
     "@mysten/dapp-kit": "^0.15.2",
     "@mysten/enoki": "^0.6.2",
