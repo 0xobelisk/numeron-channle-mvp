@@ -1,0 +1,85 @@
+{
+  "components": [],
+  "resources": [
+    {
+      "position": {
+        "fields": [
+          {
+            "player": "String"
+          },
+          {
+            "x": "u64"
+          },
+          {
+            "y": "u64"
+          }
+        ],
+        "keys": [
+          "player"
+        ],
+        "offchain": false
+      }
+    },
+    {
+      "item_dropped": {
+        "fields": [
+          {
+            "player": "String"
+          },
+          {
+            "item_type": "ItemType"
+          }
+        ],
+        "keys": [],
+        "offchain": true
+      }
+    },
+    {
+      "dapp_fee_state": {
+        "fields": [
+          {
+            "dapp_key": "String"
+          },
+          {
+            "base_fee": "u256"
+          },
+          {
+            "byte_fee": "u256"
+          },
+          {
+            "free_credit": "u256"
+          },
+          {
+            "total_bytes_size": "u256"
+          },
+          {
+            "total_recharged": "u256"
+          },
+          {
+            "total_paid": "u256"
+          }
+        ],
+        "keys": [
+          "dapp_key"
+        ],
+        "offchain": false
+      }
+    }
+  ],
+  "enums": [
+    {
+      "ItemType": [
+        "Ball",
+        "Currency",
+        "Food",
+        "Material",
+        "Medicine",
+        "Scroll",
+        "SkillBook",
+        "TreasureChest"
+      ]
+    }
+  ],
+  "package_id": "0x1fb72cbd742c624c3aced8a7d69e60d18b69623c8d221173ba3e85b256db8c8b",
+  "start_checkpoint": "260265270"
+}

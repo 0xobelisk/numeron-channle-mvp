@@ -1,36 +1,42 @@
 {
   "projectName": "numeron",
   "network": "testnet",
-  "packageId": "0x96659c76955a3ba69d8e31f3d9c9f3b08825ebdad036327be3ee9c554a8169b7",
-  "schemaId": "0xa47c0045427a870e5c05f1c9d2eff04547c5aba06b3b83abc4b3faeb0611f42c",
-  "schemas": {
-    "encounter": "StorageMap<address, EncounterInfo>",
-    "encounter_monster": "StorageValue<vector<MonsterInfo>>",
-    "player": "StorageMap<address, bool>",
-    "obstruction": "StorageMap<Position, bool>",
-    "encounter_trigger": "StorageMap<Position, bool>",
-    "map_layer": "StorageDoubleMap<u64, String, vector<u8>>",
-    "map_config": "StorageMap<u64, MapConfig>",
-    "position": "StorageMap<address, Position>",
-    "monster": "StorageMap<u256, MonsterInfo>",
-    "next_monster_id": "StorageValue<u256>",
-    "next_item_id": "StorageValue<u256>",
-    "monster_owned_by": "StorageMap<address, vector<u256>>",
-    "balance": "StorageDoubleMap<address, u256, u256>",
-    "item_metadata": "StorageMap<u256, ItemMetadata>",
-    "move_item_drop_config": "StorageValue<ItemDrop>",
-    "chest_item_drop_config": "StorageMap<u256, ItemDrop>",
-    "encounter_item_drop_config": "StorageValue<ItemDrop>",
-    "item_craft_path": "StorageMap<u256, CraftPath>",
-    "teleport_point": "StorageMap<Position, Position>",
-    "stats": "StorageMap<address, Stats>",
-    "swap_order": "StorageMap<u256, SwapOrder>",
-    "trade_order": "StorageMap<u256, TradeOrder>",
-    "next_order_id": "StorageValue<u256>",
-    "num_asset_id": "StorageValue<u256>",
-    "key_price": "StorageValue<u256>",
-    "order_fee_rate": "StorageValue<u256>"
+  "startCheckpoint": "260265270",
+  "packageId": "0x1fb72cbd742c624c3aced8a7d69e60d18b69623c8d221173ba3e85b256db8c8b",
+  "dappHub": "",
+  "upgradeCap": "0xf12fda94adada758b24d4eede0d1cd20f3a00da3080fd776f54cf23a2df2a916",
+  "version": 1,
+  "components": {},
+  "resources": {
+    "tx_digest": "vector<u8>",
+    "position": {
+      "fields": {
+        "player": "String",
+        "x": "u64",
+        "y": "u64"
+      },
+      "keys": [
+        "player"
+      ]
+    },
+    "item_dropped": {
+      "offchain": true,
+      "fields": {
+        "player": "String",
+        "item_type": "ItemType"
+      }
+    }
   },
-  "upgradeCap": "0x7a62c5b27e6c99703ba62781bdf06356719c4061ff464424d09ae3fd1656adad",
-  "version": 1
+  "enums": {
+    "ItemType": [
+      "Ball",
+      "Currency",
+      "Food",
+      "Medicine",
+      "Material",
+      "SkillBook",
+      "Scroll",
+      "TreasureChest"
+    ]
+  }
 }
