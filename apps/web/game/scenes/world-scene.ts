@@ -328,7 +328,7 @@ export class WorldScene extends BaseScene {
     // });
 
     // create foreground for depth
-    this.add.image(0, 0, `${this.#sceneData.area.toUpperCase()}_FOREGROUND`, 0).setOrigin(0);
+    this.add.image(0, 0, `${this.#sceneData.area.toUpperCase()}_FOREGROUND`, 0).setOrigin(0).setDepth(10);
 
     // create menu
     this.#menu = new WorldMenu(this);
@@ -956,17 +956,81 @@ export class WorldScene extends BaseScene {
       if (existingPlayer) {
         // Update existing player's position with animation
         const sprite = existingPlayer.sprite;
-        this.add.tween({
+
+        // Stop any existing tween to prevent animation stacking
+        if (existingPlayer._currentTween && existingPlayer._currentTween.isPlaying()) {
+          console.log(`Stopping previous tween for player ${playerAddress}`);
+          existingPlayer._currentTween.stop();
+          existingPlayer._currentTween = undefined;
+        }
+
+        // Calculate movement direction based on position change
+        const dx = x - sprite.x;
+        const dy = y - sprite.y;
+        let direction: Direction = DIRECTION.NONE;
+
+        // Determine direction based on the larger delta
+        if (Math.abs(dx) > Math.abs(dy)) {
+          // Horizontal movement is dominant
+          direction = dx > 0 ? DIRECTION.RIGHT : DIRECTION.LEFT;
+        } else if (Math.abs(dy) > 0) {
+          // Vertical movement is dominant
+          direction = dy > 0 ? DIRECTION.DOWN : DIRECTION.UP;
+        }
+
+        // Update player direction
+        if (direction !== DIRECTION.NONE) {
+          existingPlayer._direction = direction;
+
+          // Play walking animation based on direction
+          const animKey = `PLAYER_${direction}`;
+          try {
+            if (sprite.anims && (!sprite.anims.isPlaying || sprite.anims.currentAnim?.key !== animKey)) {
+              sprite.play(animKey);
+            }
+          } catch (error) {
+            console.warn(`Failed to play animation ${animKey}:`, error);
+          }
+        }
+
+        // Calculate distance to determine appropriate animation duration
+        const distance = Phaser.Math.Distance.Between(sprite.x, sprite.y, x, y);
+
+        // Dynamic duration: 150ms per tile (64px), min 200ms, max 800ms
+        // This ensures smooth animation regardless of distance
+        const duration = Phaser.Math.Clamp(distance * 2.34, 200, 800);
+
+        console.log(
+          `Moving player ${playerAddress} - Distance: ${distance.toFixed(2)}px, Duration: ${duration}ms, Direction: ${direction}`,
+        );
+
+        // Mark player as moving
+        existingPlayer._isMoving = true;
+
+        // Create new tween and store reference
+        existingPlayer._currentTween = this.add.tween({
           targets: sprite,
           x: x,
           y: y,
-          duration: 600,
+          duration: duration,
           ease: 'Linear',
           onUpdate: () => {
             existingPlayer._updateAddressLabelPosition();
           },
           onComplete: () => {
             existingPlayer._updateAddressLabelPosition();
+            // Stop walking animation and show idle frame
+            existingPlayer._isMoving = false;
+            try {
+              if (sprite.anims && sprite.anims.currentAnim) {
+                sprite.anims.stop();
+                sprite.setFrame(existingPlayer._getIdleFrame());
+              }
+            } catch (error) {
+              console.warn('Failed to stop animation:', error);
+            }
+            // Clear tween reference when animation completes
+            existingPlayer._currentTween = undefined;
           },
         });
       } else {

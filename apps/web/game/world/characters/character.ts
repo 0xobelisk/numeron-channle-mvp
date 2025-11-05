@@ -49,6 +49,7 @@ export class Character {
   _spriteGridMovementStartedCallback: (position: Coordinate) => boolean | undefined;
   dubhe?: Dubhe;
   _addressLabel?: Phaser.GameObjects.Text;
+  _currentTween?: Phaser.Tweens.Tween; // Track current movement tween to prevent animation stacking
 
   constructor(config: CharacterConfig) {
     if (this.constructor === Character) {

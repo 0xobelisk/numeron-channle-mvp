@@ -1,5 +1,5 @@
 [package]
-published-at = "0xb202d3581a24591175732ff8b4d4055d9f913289c237e93370143d2aa3c7cc0d"
+published-at = "0xbb4af2a0b9b3f474d48b3a1c021b4afbd1be8dbf03bfd6325db23bdfd84c02d6"
 name = "Dubhe"
 edition = "2024"
 version = "1.0.0"
@@ -10,5 +10,5 @@ authors = ["Obelisk Labs"]
 Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "mainnet-v1.46.3" }
 
 [addresses]
-dubhe = "0xb202d3581a24591175732ff8b4d4055d9f913289c237e93370143d2aa3c7cc0d"
+dubhe = "0xbb4af2a0b9b3f474d48b3a1c021b4afbd1be8dbf03bfd6325db23bdfd84c02d6"
 
