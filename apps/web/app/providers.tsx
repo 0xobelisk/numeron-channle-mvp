@@ -5,8 +5,8 @@ import { AuthenticationProvider } from '@/contexts/Authentication';
 import React from 'react';
 import { EnokiFlowProvider } from '@mysten/enoki/react';
 import { createNetworkConfig, SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
-import { getFullnodeUrl } from '@mysten/sui/client';
-import { registerStashedWallet } from '@mysten/zksend';
+import { getFullnodeUrl } from '@0xobelisk/sui-client';
+// import { registerStashedWallet } from '@mysten/zksend';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import clientConfig from '@/config/clientConfig';
 import '@mysten/dapp-kit/dist/index.css';
@@ -30,7 +30,7 @@ const sessionStorageAdapter: StorageAdapter = {
   },
 };
 
-registerStashedWallet('Breaking the Ice - Community Vote', {});
+// registerStashedWallet('Breaking the Ice - Community Vote', {});
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const { networkConfig } = createNetworkConfig({
@@ -43,13 +43,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <SuiClientProvider networks={networkConfig} defaultNetwork={clientConfig.SUI_NETWORK_NAME}>
-        <WalletProvider
-          autoConnect
-          stashedWallet={{
-            name: 'Breaking the Ice - Community Vote',
-          }}
-          storage={sessionStorageAdapter}
-        >
+        <WalletProvider autoConnect storage={sessionStorageAdapter}>
           <EnokiFlowProvider apiKey={clientConfig.ENOKI_API_KEY}>
             <AuthenticationProvider>
               <CustomWalletProvider>

@@ -28,7 +28,7 @@ export interface CharacterConfig {
   objectsToCheckForCollisionsWith?: Array<{ position: Coordinate }>;
   spriteGridMovementStartedCallback?: (position: Coordinate) => boolean;
   dubhe?: Dubhe;
-  schemaId?: string;
+  playerAddress?: string; // player address to display above character
 }
 
 export class Character {
@@ -48,7 +48,7 @@ export class Character {
   _objectsToCheckForCollisionsWith: Array<{ position: Coordinate }>;
   _spriteGridMovementStartedCallback: (position: Coordinate) => boolean | undefined;
   dubhe?: Dubhe;
-  schemaId?: string;
+  _addressLabel?: Phaser.GameObjects.Text;
 
   constructor(config: CharacterConfig) {
     if (this.constructor === Character) {
@@ -72,8 +72,43 @@ export class Character {
     this._objectsToCheckForCollisionsWith = config.objectsToCheckForCollisionsWith || [];
     this._spriteGridMovementStartedCallback = config.spriteGridMovementStartedCallback;
     this.dubhe = config.dubhe;
-    this.schemaId = config.schemaId;
     this._isChainMovementPending = false;
+
+    // Create address label if playerAddress is provided
+    if (config.playerAddress) {
+      this._createAddressLabel(config.playerAddress);
+    }
+  }
+
+  _createAddressLabel(address: string) {
+    // Format address: first 6 chars + ... + last 4 chars
+    const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
+
+    this._addressLabel = this._scene.add
+      .text(this._phaserGameObject.x, this._phaserGameObject.y - 35, shortAddress, {
+        fontSize: '16px',
+        color: '#ffffff',
+        backgroundColor: '#000000',
+        padding: { x: 6, y: 3 },
+      })
+      .setOrigin(0.5, 1)
+      .setDepth(1000);
+  }
+
+  _updateAddressLabelPosition() {
+    if (this._addressLabel) {
+      this._addressLabel.setPosition(this._phaserGameObject.x, this._phaserGameObject.y - 35);
+    }
+  }
+
+  destroy() {
+    if (this._addressLabel) {
+      this._addressLabel.destroy();
+      this._addressLabel = undefined;
+    }
+    if (this._phaserGameObject) {
+      this._phaserGameObject.destroy();
+    }
   }
 
   get sprite(): Phaser.GameObjects.Sprite {
@@ -97,7 +132,6 @@ export class Character {
     if (this._isMoving || !this._phaserGameObject || !this._phaserGameObject.scene) {
       return;
     }
-
     // 检查场景是否处于活动状态
     if (!this._phaserGameObject.scene.scene.isActive()) {
       return;
@@ -255,13 +289,11 @@ export class Character {
     }
 
     try {
-      if (this.schemaId && this.dubhe) {
+      if (this.dubhe) {
         this._isChainMovementPending = true;
 
         // 准备交易
         const stepTxB = new Transaction();
-        let schemaObject = stepTxB.object(this.schemaId);
-        let randomObject = stepTxB.object.random();
         stepTxB.setGasBudget(10000000);
 
         let direction: number;
@@ -281,11 +313,10 @@ export class Character {
         }
 
         // 构建交易
-        console.log('schemaObject', schemaObject);
         console.log('dubhe shcmeid', DUBHE_SCHEMA_ID);
-        await this.dubhe.tx.numeron_map_system.move_position({
+        await this.dubhe.tx.map_system.move_position({
           tx: stepTxB,
-          params: [stepTxB.object(DUBHE_SCHEMA_ID), schemaObject, randomObject, stepTxB.pure.u8(direction)],
+          params: [stepTxB.object(DUBHE_SCHEMA_ID), stepTxB.pure.u8(direction)],
           isRaw: true,
         });
 
@@ -304,7 +335,7 @@ export class Character {
               }
               this._scene.add.tween({
                 delay: 0,
-                duration: 1200,
+                duration: 600,
                 y: {
                   from: this._phaserGameObject.y,
                   start: this._phaserGameObject.y,
@@ -316,14 +347,15 @@ export class Character {
                   to: this._targetPosition.x,
                 },
                 targets: this._phaserGameObject,
+                onUpdate: () => {
+                  this._updateAddressLabelPosition();
+                },
                 onComplete: () => {
+                  this._updateAddressLabelPosition();
                   resolve();
                 },
               });
             });
-
-            // 等待交易确认
-            await this.dubhe.waitForIndexerTransaction(result.digest);
           },
           onError: (error: any) => {
             console.error(`Move transaction failed:`, error);
@@ -355,7 +387,11 @@ export class Character {
               to: this._targetPosition.x,
             },
             targets: this._phaserGameObject,
+            onUpdate: () => {
+              this._updateAddressLabelPosition();
+            },
             onComplete: () => {
+              this._updateAddressLabelPosition();
               resolve();
             },
           });

@@ -2,10 +2,16 @@ scrollback: 10000
 procs:
   client:
     cwd: apps/web
-    shell: pnpm dubhe wait --url http://127.0.0.1:3001/ && pnpm prod:localnet && pnpm dev
+    shell: pnpm dubhe wait --local-indexer && pnpm prod:localnet && pnpm dev
+  graphql:
+    cwd: .
+    shell: docker-compose down && rm -rf .data/postgres && docker-compose up --remove-orphans
   contracts:
     cwd: packages/contracts
-    shell: pnpm dubhe wait --url http://127.0.0.1:9123/ && pnpm setup:localnet
+    shell: pnpm dubhe wait --localnet && pnpm setup:localnet
   node:
     cwd: packages/contracts
-    shell: pnpm dubhe node
+    shell: pnpm dubhe node --force
+  shell:
+    cwd: packages/contracts
+    shell: pnpm dubhe wait --local-indexer && pnpm dubhe shell

@@ -63,7 +63,7 @@ export class TransactionStateMachine {
         },
       });
 
-      await this.#dubhe.waitForIndexerTransaction(result.digest);
+      await this.#dubhe.waitForTransaction(result.digest);
     } catch (error) {
       console.error(`Transaction ${txObject.id} execution error:`, error);
     }

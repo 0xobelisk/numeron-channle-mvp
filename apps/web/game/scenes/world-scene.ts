@@ -40,11 +40,13 @@ import {
 import { MonsterPartySceneData } from './monster-party-scene';
 import { InventorySceneData } from './inventory-scene';
 import { PlayerLocation } from '../utils/data-manager';
-import { Dubhe, loadMetadata, SubscriptionKind, Transaction } from '@0xobelisk/sui-client';
-import { DUBHE_SCHEMA_ID, NETWORK, PACKAGE_ID, SCHEMA_ID } from 'contracts/deployment';
+import { Dubhe, loadMetadata, SuiMoveNormalizedModules, Transaction } from '@0xobelisk/sui-client';
+import { DUBHE_SCHEMA_ID, NETWORK, PACKAGE_ID } from 'contracts/deployment';
 import { ChatScene } from './chat-scene';
 import { MessageType } from './chat-scene';
 import { walletUtils } from '../utils/wallet-utils';
+import { Struct } from '@0xobelisk/grpc-client';
+import contractMetadata from 'contracts/metadata.json';
 
 export type TiledObjectProperty = {
   name: string;
@@ -126,6 +128,7 @@ export class WorldScene extends BaseScene {
   dubhe: Dubhe;
   schemaId: string;
   subscription: WebSocket;
+  #otherPlayers: Map<string, Player>;
 
   constructor() {
     super({
@@ -241,29 +244,28 @@ export class WorldScene extends BaseScene {
     // create collision layer for encounters
     this.#createEncounterAreas(map);
 
-    const metadata = await loadMetadata(NETWORK, PACKAGE_ID);
     const dubhe = new Dubhe({
       networkType: NETWORK,
       packageId: PACKAGE_ID,
-      metadata: metadata,
-      indexerUrl: walletUtils.getIndexerUrl().http,
-      indexerWsUrl: walletUtils.getIndexerUrl().ws,
+      metadata: contractMetadata as SuiMoveNormalizedModules,
     });
 
     this.dubhe = dubhe;
-    this.schemaId = SCHEMA_ID;
-    let have_player = await dubhe.getStorageItem({
-      name: 'player',
-      key1: walletUtils.getCurrentAccount().address,
+    let have_player = await walletUtils.graphqlClient.getTableByCondition('position', {
+      player: walletUtils.getCurrentAccount().address,
     });
 
-    if (have_player === undefined) {
-      await this.registerNewPlayer(dubhe);
-    }
-    await this.subscribeToEvents(dubhe);
+    console.log('=========have_player', have_player);
+    // // TODO: register new player
+    // if (!have_player) {
+    //   await this.registerNewPlayer(dubhe);
+    // }
+    // TODO: subscribe to events
+    await this.subscribeToEvents();
 
     // Check if in teleport state
     const isTeleporting = dataManager.store.get('IS_TELEPORTING');
+    console.log('=========isTeleporting', isTeleporting);
 
     if (!isTeleporting) {
       await dataManager.updatePlayerPosition();
@@ -280,7 +282,10 @@ export class WorldScene extends BaseScene {
     // create items and collisions
     this.#createItems(map);
     // create npcs
-    this.#createNPCs(map);
+    // this.#createNPCs(map);
+
+    // Get current player address for display
+    const currentPlayerAddress = walletUtils.getCurrentAccount().address;
 
     this.#player = new Player({
       scene: this,
@@ -303,14 +308,24 @@ export class WorldScene extends BaseScene {
         return this.#handlePlayerMovementStarted(position);
       },
       dubhe,
-      schemaId: SCHEMA_ID,
+      playerAddress: currentPlayerAddress,
     });
+
+    // Set depth to ensure player is visible above background
+    this.#player.sprite.setDepth(1);
+
     this.cameras.main.startFollow(this.#player.sprite);
 
-    // update our collisions with npcs
-    this.#npcs.forEach(npc => {
-      npc.addCharacterToCheckForCollisionsWith(this.#player);
-    });
+    // Initialize other players map
+    this.#otherPlayers = new Map();
+
+    // Load and create other players
+    await this.#loadOtherPlayers(collisionLayer);
+
+    // // update our collisions with npcs
+    // this.#npcs.forEach(npc => {
+    //   npc.addCharacterToCheckForCollisionsWith(this.#player);
+    // });
 
     // create foreground for depth
     this.add.image(0, 0, `${this.#sceneData.area.toUpperCase()}_FOREGROUND`, 0).setOrigin(0);
@@ -375,7 +390,6 @@ export class WorldScene extends BaseScene {
 
     // const hasEncounter = await dataManager.hasEncounter();
     // if (hasEncounter) {
-    await this.#handleEncounterCreation();
     // }
   }
 
@@ -397,9 +411,9 @@ export class WorldScene extends BaseScene {
     if (chatScene && chatScene.isInputActive) {
       // Only update game objects, don't process input
       this.#player.update(time);
-      this.#npcs.forEach(npc => {
-        npc.update(time);
-      });
+      // this.#npcs.forEach(npc => {
+      //   npc.update(time);
+      // });
       return;
     }
 
@@ -409,9 +423,9 @@ export class WorldScene extends BaseScene {
 
     if (this.#isProcessingCutSceneEvent) {
       this.#player.update(time);
-      this.#npcs.forEach(npc => {
-        npc.update(time);
-      });
+      // this.#npcs.forEach(npc => {
+      //   npc.update(time);
+      // });
       if (wasSpaceKeyPressed && this.#npcPlayerIsInteractingWith) {
         await this.#handlePlayerInteraction();
       }
@@ -492,9 +506,14 @@ export class WorldScene extends BaseScene {
 
     this.#player.update(time);
 
-    this.#npcs.forEach(npc => {
-      npc.update(time);
+    // Update other players
+    this.#otherPlayers.forEach(otherPlayer => {
+      otherPlayer.update(time);
     });
+
+    // this.#npcs.forEach(npc => {
+    //   npc.update(time);
+    // });
 
     // Ensure chat scene stays in the foreground, but don't repeatedly launch it
     if (this.scene.isActive(SCENE_KEYS.CHAT_SCENE)) {
@@ -509,7 +528,7 @@ export class WorldScene extends BaseScene {
    * Handles real-time game events through WebSocket subscription
    * @param dubhe - Dubhe client instance
    */
-  async subscribeToEvents(dubhe: Dubhe) {
+  async subscribeToEvents() {
     try {
       // First check if there's an existing subscription, if so close it
       if (this.subscription) {
@@ -521,151 +540,43 @@ export class WorldScene extends BaseScene {
         }
       }
 
-      // Subscribe to multiple event types
-      const sub = await dubhe.subscribe(
-        [
-          {
-            kind: SubscriptionKind.Event,
-            name: 'monster_catch_attempt',
-            // sender: walletUtils.getCurrentAccount().address,
-          },
-          {
-            kind: SubscriptionKind.Schema,
-            name: 'position',
-          },
-          {
-            kind: SubscriptionKind.Schema,
-            name: 'monster',
-          },
-          {
-            kind: SubscriptionKind.Schema,
-            name: 'encounter',
-          },
-          {
-            kind: SubscriptionKind.Schema,
-            name: 'chat',
-          },
-          {
-            kind: SubscriptionKind.Event,
-            name: 'item_dropped',
-            // sender: walletUtils.getCurrentAccount().address,
-          },
-        ],
-        async data => {
-          console.log('Received real-time data:', data);
+      console.log('========= subscribeToEvents - starting subscription');
+      const subscription = walletUtils.grpcClient.dubheGrpcClient.subscribeTable({
+        tableIds: [],
+      });
+      console.log('========= subscription created', subscription);
 
-          let chatSceneAvailable = false;
-          if (!this.#chatUi) {
-            try {
-              this.#chatUi = this.scene.get(SCENE_KEYS.CHAT_SCENE) as ChatScene;
-              if (!this.scene.isActive(SCENE_KEYS.CHAT_SCENE)) {
-                this.scene.launch(SCENE_KEYS.CHAT_SCENE);
-                // Give scene some time to initialize
-                await new Promise(resolve => setTimeout(resolve, 500));
+      // Process subscription events in the background without blocking
+      // Use an immediately-invoked async function that runs independently
+      (async () => {
+        try {
+          for await (const change of subscription.responses) {
+            console.log(`--------------------------------`);
+            console.log(`Table: ${change.tableId}`);
+            if (change.data) {
+              const data = Struct.toJson(change.data);
+              console.log(`Data: ${JSON.stringify(data, null, 2)}`);
+
+              // Handle position updates for other players
+              if (change.tableId === 'position' && data) {
+                await this.#handleOtherPlayerPositionUpdate(data);
               }
-            } catch (error) {
-              console.error('Error initializing chat scene:', error);
+
+              // Handle item dropped events
+              if (change.tableId === 'item_dropped' && data) {
+                await this.#handleItemDroppedEvent(data);
+              }
+            } else {
+              console.log(`Data: None`);
             }
           }
+          console.log('========= subscription loop ended');
+        } catch (error) {
+          console.error('Error in subscription loop:', error);
+        }
+      })();
 
-          // Confirm ChatScene availability
-          chatSceneAvailable =
-            this.#chatUi && typeof this.#chatUi.addMessage === 'function' && this.scene.isActive(SCENE_KEYS.CHAT_SCENE);
-
-          try {
-            // Process various message types
-            if (data.name === 'position') {
-              const position = data.value;
-              const playerAddress = data.key1;
-
-              // Only show other players' movements
-              if (playerAddress !== walletUtils.getCurrentAccount().address) {
-                const shortAddress = `${playerAddress.substring(0, 6)}...`;
-                // Don't show chat messages in battle mode
-                if (chatSceneAvailable) {
-                  this.#chatUi.addMessage(
-                    `player ${shortAddress} moved to (${position.x}, ${position.y})`,
-                    MessageType.OTHER,
-                    shortAddress,
-                  );
-                }
-              }
-            } else if (data.name === 'monster') {
-              // console.log('=========== subscribed to monster event, monsters', data);
-              // Monster status updates are system messages, can show even during battle
-              if (chatSceneAvailable) {
-                this.#chatUi.addMessage('Monster status updated', MessageType.SYSTEM);
-              }
-              // } else if (data.name === 'encounter') {
-              //   // Set battle mode flag when encounter happens
-              //   if (!this.#wildMonsterEncountered) {
-              //     this.#handleEncounterCreation();
-              //     if (chatSceneAvailable) {
-              //       this.#chatUi.addMessage('Encounter happened!', MessageType.SYSTEM);
-              //     }
-              //   }
-            } else if (data.name === 'monster_catch_attempt') {
-              const result = data.value.result;
-              if (result) {
-                const resultType = Object.keys(result)[0];
-                let resultMessage = 'Unknown result';
-
-                if (resultType === 'Caught') {
-                  resultMessage = 'Caught successfully!';
-                } else if (resultType === 'Missed') {
-                  resultMessage = 'Catch failed!';
-                } else if (resultType === 'Ran') {
-                  resultMessage = 'Monster ran!';
-                }
-
-                // Catch results are battle-related system messages, can show
-                if (chatSceneAvailable) {
-                  this.#chatUi.addMessage(resultMessage, MessageType.SYSTEM);
-                }
-              }
-            } else if (data.name === 'chat') {
-              const message = data.value.message;
-              const sender = data.key1;
-
-              // Don't show chat messages in battle mode
-              if (sender !== walletUtils.getCurrentAccount().address) {
-                const shortAddress = `${sender.substring(0, 6)}...`;
-                if (chatSceneAvailable) {
-                  this.#chatUi.addMessage(message, MessageType.OTHER, shortAddress);
-                }
-              }
-            } else if (data.name === 'item_dropped') {
-              try {
-                const itemId = data.value.item_id;
-                const quantities = data.value.quantities;
-
-                // Item metadata might be async, wrap in try-catch
-                let itemName = itemId;
-                try {
-                  const itemMetadata = await dataManager.getItemMetadata(itemId);
-                  if (itemMetadata && itemMetadata.name) {
-                    itemName = itemMetadata.name;
-                  }
-                } catch (err) {
-                  console.error('Error getting item metadata:', err);
-                }
-
-                const message = `Dropped ${quantities} ${itemName}`;
-                // Item drops are game system messages, can show
-                if (chatSceneAvailable) {
-                  this.#chatUi.addMessage(message, MessageType.ITEM);
-                }
-              } catch (itemError) {
-                console.error('Error processing item_dropped event:', itemError);
-              }
-            }
-          } catch (messageError) {
-            console.error('Error processing subscription message:', messageError);
-          }
-        },
-      );
-
-      this.subscription = sub;
+      console.log('========= subscribeToEvents - subscription started in background');
     } catch (error) {
       console.error('Failed to subscribe to events:', error);
     }
@@ -680,22 +591,19 @@ export class WorldScene extends BaseScene {
       const registerTx = new Transaction();
       const params = [
         registerTx.object(this._dubheSchemaId),
-        registerTx.object(SCHEMA_ID),
-        registerTx.pure.u64(0),
-        registerTx.pure.u64(4),
-        registerTx.pure.u64(21),
+        registerTx.pure.string(walletUtils.getCurrentAccount().address),
+        registerTx.pure.u64(1),
+        registerTx.pure.u64(1),
       ];
       registerTx.setGasBudget(100000000);
-      await dubhe.tx.numeron_map_system.register({
+      await dubhe.tx.map_system.force_register({
         tx: registerTx,
         params,
         isRaw: true,
       });
       await walletUtils.signAndExecuteTransaction({
         tx: registerTx,
-        onSuccess: async result => {
-          await dubhe.waitForIndexerTransaction(result.digest);
-        },
+        onSuccess: async result => {},
         onError: error => {
           console.error('Failed to register player:', error);
         },
@@ -777,12 +685,9 @@ export class WorldScene extends BaseScene {
     });
     if (nearbyItem) {
       // add item to inventory and display message to player
-      const item = await dataManager.getItemMetadata(nearbyItem.itemId);
-      dataManager.addItem(item, 1);
       nearbyItem.gameObject.destroy();
       this.#items.splice(nearbyItemIndex, 1);
       dataManager.addItemPickedUp(nearbyItem.id);
-      this.#dialogUi.showDialogModal([`You found a ${item.name}`]);
     }
   }
 
@@ -887,75 +792,12 @@ export class WorldScene extends BaseScene {
     // const hasEncounter = await dataManager.hasEncounter();
     // if (hasEncounter) {
     //   console.log(`[${WorldScene.name}:handlePlayerMovementInEncounterZone] player has encountered a wild monster`);
-    await this.#handleEncounterCreation();
     // }
     // this.#wildMonsterEncountered = Math.random() < 0.2;
 
     // if (wildMonsterEncountered) {
 
     // }
-  }
-
-  async #handleEncounterCreation() {
-    try {
-      if (this.#wildMonsterEncountered) {
-        return;
-      }
-
-      // 立即锁定玩家输入，防止在转场动画期间移动
-      this._controls.lockInput = true;
-      this.#wildMonsterEncountered = true;
-
-      // const encounterAreaId = (this.#encounterZonePlayerIsEntering.layer.properties as TiledObjectProperty[]).find(
-      //   property => property.name === TILED_ENCOUNTER_PROPERTY.AREA,
-      // ).value;
-      // const possibleMonsters = DataUtils.getEncounterAreaDetails(this, encounterAreaId);
-      // const randomMonsterId = weightedRandom(possibleMonsters);
-      // TO GET ENCONTER MONSTER ON CHAIN
-      const enemyMonsters = await dataManager.getEncounterMonster();
-      if (!enemyMonsters) {
-        console.log(`[${WorldScene.name}:handleEncounterCreation] no enemy monsters found`);
-        // 如果没有找到怪兽，解除锁定
-        this._controls.lockInput = false;
-        this.#wildMonsterEncountered = false;
-        return;
-      }
-
-      console.log(`[${WorldScene.name}:handleEncounterCreation] player has encountered a wild monster`);
-
-      // 检查cameras.main是否存在，防止出现"Cannot read properties of undefined"错误
-      if (!this.cameras || !this.cameras.main) {
-        console.log(`[${WorldScene.name}:handleEncounterCreation] cameras.main is undefined, skipping fade out`);
-        const dataToPass: BattleSceneData = {
-          enemyMonsters: [enemyMonsters.monster],
-          playerMonsters: dataManager.store.get(DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY),
-          playerMonsterId: enemyMonsters.playerMonsterId,
-        };
-        this.scene.start(SCENE_KEYS.BATTLE_SCENE, dataToPass);
-        return;
-      }
-
-      this.cameras.main.fadeOut(2000);
-      this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-        const dataToPass: BattleSceneData = {
-          enemyMonsters: [enemyMonsters.monster],
-          playerMonsters: dataManager.store.get(DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY),
-          playerMonsterId: enemyMonsters.playerMonsterId,
-        };
-
-        this.scene.start(SCENE_KEYS.BATTLE_SCENE, dataToPass);
-      });
-    } catch (error) {
-      console.error(`[${WorldScene.name}:handleEncounterCreation] 处理遭遇战创建时出错:`, error);
-      // 如果错误是已经在遭遇战中，这是预期的，不需要额外处理
-      if (error.toString().includes('already_in_encounter_error')) {
-        console.log(`[${WorldScene.name}:handleEncounterCreation] 玩家已经处于遭遇战中，忽略此错误`);
-      }
-      // 不抛出错误，允许游戏继续运行
-      // 出错时也要保持锁定状态
-      this._controls.lockInput = true;
-      this.#wildMonsterEncountered = true;
-    }
   }
 
   #isPlayerInputLocked(): boolean {
@@ -1027,14 +869,188 @@ export class WorldScene extends BaseScene {
   }
 
   async #healPlayerParty() {
-    await dataManager.updateMonsters();
-
     // heal all monsters in party
     // const monsters: Monster[] = dataManager.store.get(DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY);
     // monsters.forEach(monster => {
     //   monster.currentHp = monster.maxHp;
     // });
     // dataManager.store.set(DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY, monsters);
+  }
+
+  async #loadOtherPlayers(collisionLayer: Phaser.Tilemaps.TilemapLayer) {
+    try {
+      const currentPlayerAddress = walletUtils.getCurrentAccount().address;
+      console.log('========= Current player address:', currentPlayerAddress);
+
+      const allPlayersPositions = await dataManager.getAllPlayersPositions();
+      console.log('========= Total players found:', allPlayersPositions.length);
+      console.log('========= All players positions:', JSON.stringify(allPlayersPositions, null, 2));
+
+      // Create player sprites for all other players (excluding current player)
+      let otherPlayersCount = 0;
+      for (const playerPos of allPlayersPositions) {
+        console.log('========= Processing player:', playerPos.player);
+
+        // Skip current player
+        if (playerPos.player === currentPlayerAddress) {
+          console.log('========= Skipping current player:', playerPos.player);
+          continue;
+        }
+
+        console.log(
+          '========= Creating sprite for other player:',
+          playerPos.player,
+          'at position:',
+          playerPos.x,
+          playerPos.y,
+        );
+
+        // Create a Player instance for other players
+        const otherPlayer = new Player({
+          scene: this,
+          position: { x: playerPos.x, y: playerPos.y },
+          direction: DIRECTION.DOWN,
+          collisionLayer: collisionLayer,
+          otherCharactersToCheckForCollisionsWith: this.#npcs,
+          objectsToCheckForCollisionsWith: this.#items,
+          entranceLayer: this.#entranceLayer,
+          enterEntranceCallback: async () => {}, // Other players don't trigger entrance events
+          playerAddress: playerPos.player,
+        });
+
+        // Set depth to ensure other players are visible
+        otherPlayer.sprite.setDepth(1);
+
+        this.#otherPlayers.set(playerPos.player, otherPlayer);
+        otherPlayersCount++;
+        console.log(`========= Successfully created player sprite #${otherPlayersCount} for: ${playerPos.player}`);
+        console.log(`========= Sprite visible: ${otherPlayer.sprite.visible}, active: ${otherPlayer.sprite.active}`);
+      }
+
+      console.log(`========= Finished loading ${otherPlayersCount} other players`);
+      console.log(`========= Total players in map: ${this.#otherPlayers.size}`);
+    } catch (error) {
+      console.error('========= Failed to load other players:', error);
+      console.error('========= Error stack:', error.stack);
+    }
+  }
+
+  async #handleOtherPlayerPositionUpdate(positionData: any) {
+    try {
+      const currentPlayerAddress = walletUtils.getCurrentAccount().address;
+      const playerAddress = positionData.player;
+
+      // Skip if this is the current player
+      if (playerAddress === currentPlayerAddress) {
+        return;
+      }
+
+      const x = Number(positionData.x) * TILE_SIZE;
+      const y = Number(positionData.y) * TILE_SIZE;
+
+      console.log(`Updating player ${playerAddress} position to (${x}, ${y})`);
+
+      // Check if we already have this player
+      const existingPlayer = this.#otherPlayers.get(playerAddress);
+
+      if (existingPlayer) {
+        // Update existing player's position with animation
+        const sprite = existingPlayer.sprite;
+        this.add.tween({
+          targets: sprite,
+          x: x,
+          y: y,
+          duration: 600,
+          ease: 'Linear',
+          onUpdate: () => {
+            existingPlayer._updateAddressLabelPosition();
+          },
+          onComplete: () => {
+            existingPlayer._updateAddressLabelPosition();
+          },
+        });
+      } else {
+        // Create new player if they don't exist
+        const collisionLayer = this.#player._collisionLayer;
+        const newPlayer = new Player({
+          scene: this,
+          position: { x, y },
+          direction: DIRECTION.DOWN,
+          collisionLayer: collisionLayer,
+          otherCharactersToCheckForCollisionsWith: this.#npcs,
+          objectsToCheckForCollisionsWith: this.#items,
+          entranceLayer: this.#entranceLayer,
+          enterEntranceCallback: async () => {},
+          playerAddress: playerAddress,
+        });
+
+        // Set depth to ensure new player is visible
+        newPlayer.sprite.setDepth(1);
+
+        this.#otherPlayers.set(playerAddress, newPlayer);
+        console.log(`========= Created new player sprite for: ${playerAddress} at position (${x}, ${y})`);
+        console.log(`========= New sprite visible: ${newPlayer.sprite.visible}, active: ${newPlayer.sprite.active}`);
+      }
+    } catch (error) {
+      console.error('========= Failed to update other player position:', error);
+      console.error('========= Error stack:', error.stack);
+    }
+  }
+
+  /**
+   * Handle item dropped events from subscription
+   * @param itemDropData - The item drop data from the subscription
+   */
+  async #handleItemDroppedEvent(itemDropData: any) {
+    try {
+      console.log('========= Item dropped event received:', itemDropData);
+
+      // Extract item information from the data
+      const itemType = itemDropData.item_type || itemDropData.itemType;
+      const playerAddress = itemDropData.player;
+      const quantity = itemDropData.quantity || 1;
+
+      if (!itemType) {
+        console.warn('Item dropped event missing item_type:', itemDropData);
+        return;
+      }
+
+      // Format the message based on whether it's the current player or another player
+      const currentPlayerAddress = walletUtils.getCurrentAccount().address;
+      let message: string;
+
+      if (playerAddress === currentPlayerAddress) {
+        // Current player dropped an item
+        message = `You dropped: ${itemType}${quantity > 1 ? ` x${quantity}` : ''}`;
+      } else {
+        // Another player dropped an item
+        const shortAddress = playerAddress ? `${playerAddress.slice(0, 6)}...${playerAddress.slice(-4)}` : 'Someone';
+        message = `${shortAddress} dropped: ${itemType}${quantity > 1 ? ` x${quantity}` : ''}`;
+      }
+
+      // Ensure chat UI is initialized
+      if (!this.#chatUi) {
+        this.#chatUi = this.scene.get(SCENE_KEYS.CHAT_SCENE) as ChatScene;
+
+        if (!this.scene.isActive(SCENE_KEYS.CHAT_SCENE)) {
+          console.log('Starting chat scene for item drop notification...');
+          this.scene.launch(SCENE_KEYS.CHAT_SCENE);
+          // Wait for scene initialization
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      // Send message to chat with ITEM type for green color highlighting
+      if (this.#chatUi && typeof this.#chatUi.addMessage === 'function') {
+        this.#chatUi.addMessage(message, MessageType.ITEM);
+        console.log(`========= Item drop message sent: ${message}`);
+      } else {
+        console.warn('Unable to send item drop message: ChatUI not properly initialized');
+      }
+    } catch (error) {
+      console.error('========= Failed to handle item dropped event:', error);
+      console.error('========= Error stack:', error.stack);
+    }
   }
 
   #createItems(map: Phaser.Tilemaps.Tilemap) {
@@ -1126,7 +1142,6 @@ export class WorldScene extends BaseScene {
                   const tempEntranceId = object.properties.find(property => property.name === 'entrance_id').value;
                   return tempEntranceName === this.#sceneData.area && tempEntranceId === entranceId;
                 });
-                await this.dubhe.waitForIndexerTransaction(result.digest);
 
                 // 计算新位置
                 let newX = entranceObject.x;
@@ -1543,8 +1558,6 @@ export class WorldScene extends BaseScene {
         tx,
         onSuccess: async (result: any) => {
           console.log(`Transaction successful:`, result);
-          await this.dubhe.waitForIndexerTransaction(result.digest);
-          await dataManager.updateMonsters();
         },
         onError: (error: any) => {
           console.error(`Transaction failed:`, error);

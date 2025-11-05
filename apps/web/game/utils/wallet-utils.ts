@@ -1,13 +1,15 @@
-import { Transaction } from '@mysten/sui/transactions';
-import { Dubhe, NetworkType } from '@0xobelisk/sui-client';
-import { NETWORK, PACKAGE_ID, SCHEMA_ID } from 'contracts/deployment';
+import { Dubhe, NetworkType, SuiMoveNormalizedModules, Transaction } from '@0xobelisk/sui-client';
+import { NETWORK, PACKAGE_ID } from 'contracts/deployment';
 import { SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions } from '@0xobelisk/sui-client';
 import {
   ExecuteTransactionBlockWithoutSponsorshipProps,
   SignAndExecuteTransactionProps,
 } from '@/contexts/CustomWallet';
+import { DubheGraphqlClient } from '@0xobelisk/graphql-client';
+import { DubheGrpcClient } from '@0xobelisk/grpc-client';
+import contractMetadata from 'contracts/metadata.json';
+import dubheMetadata from 'contracts/dubhe.config.json';
 
-let PRIVATEKEY = process.env.NEXT_PUBLIC_PRIVATE_KEY;
 // Add customWallet property type to window object
 declare global {
   interface Window {
@@ -35,28 +37,46 @@ class WalletUtils {
   private static instance: WalletUtils;
   dubhe: Dubhe;
   network: NetworkType;
-  httpIndexerUrl: string;
-  wsIndexerUrl: string;
+  endpoint: {
+    http: string;
+    ws: string;
+    grpc: string;
+  };
+  graphqlClient: DubheGraphqlClient;
+  grpcClient: DubheGrpcClient;
 
   private constructor() {
     let PRIVATEKEY = process.env.NEXT_PUBLIC_PRIVATE_KEY;
     if (NETWORK === 'localnet') {
-      this.httpIndexerUrl = 'http://127.0.0.1:3001';
-      this.wsIndexerUrl = 'ws://127.0.0.1:3001';
+      this.endpoint = {
+        http: 'http://127.0.0.1:4000/graphql',
+        ws: 'ws://127.0.0.1:4000/graphql',
+        grpc: 'http://127.0.0.1:8080',
+      };
     } else if (NETWORK === 'testnet') {
-      this.httpIndexerUrl = 'https://testnet-indexer.numeron.world';
-      this.wsIndexerUrl = 'wss://testnet-indexer.numeron.world';
+      this.endpoint = {
+        http: 'https://testnet-indexer.numeron.world',
+        ws: 'wss://testnet-indexer.numeron.world',
+        grpc: 'https://testnet-indexer.numeron.world',
+      };
     }
 
     const dubhe = new Dubhe({
       networkType: NETWORK,
       packageId: PACKAGE_ID,
       secretKey: NETWORK === 'localnet' ? PRIVATEKEY : undefined,
-      indexerUrl: this.httpIndexerUrl,
-      indexerWsUrl: this.wsIndexerUrl,
+      metadata: contractMetadata as SuiMoveNormalizedModules,
     });
     this.dubhe = dubhe;
     this.network = NETWORK;
+
+    this.graphqlClient = new DubheGraphqlClient({
+      endpoint: this.endpoint.http,
+      dubheMetadata,
+    });
+    this.grpcClient = new DubheGrpcClient({
+      baseUrl: this.endpoint.grpc,
+    });
   }
 
   /**
@@ -151,11 +171,8 @@ class WalletUtils {
     return this.getCurrentAccount()?.address || null;
   }
 
-  public getIndexerUrl(): { http: string; ws: string } {
-    return {
-      http: this.httpIndexerUrl,
-      ws: this.wsIndexerUrl,
-    };
+  public getEndpoint(): { http: string; ws: string; grpc: string } {
+    return this.endpoint;
   }
 
   /**

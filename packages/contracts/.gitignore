@@ -49,3 +49,5 @@ indexer.db
 node_logs
 mprocs.log
 .data/
+
+.chk/

@@ -27,8 +27,10 @@ import {
   ItemCategory,
 } from '../types/typedef';
 import { Dubhe } from '@0xobelisk/sui-client';
-import { NETWORK, PACKAGE_ID, SCHEMA_ID } from 'contracts/deployment';
+import { NETWORK, PACKAGE_ID } from 'contracts/deployment';
 import { walletUtils } from './wallet-utils';
+import { DubheGraphqlClient } from '@0xobelisk/graphql-client';
+import { DubheGrpcClient } from '@0xobelisk/grpc-client';
 
 const LOCAL_STORAGE_KEY = 'MONSTER_TAMER_DATA';
 
@@ -81,8 +83,8 @@ export interface GlobalState {
 export const initialState: GlobalState = {
   player: {
     position: {
-      x: 4 * TILE_SIZE,
-      y: 0 * TILE_SIZE,
+      x: 1 * TILE_SIZE,
+      y: 1 * TILE_SIZE,
     },
     direction: DIRECTION.DOWN,
     location: {
@@ -152,11 +154,8 @@ class DataManager extends Phaser.Events.EventEmitter {
     const dubhe = new Dubhe({
       networkType: NETWORK,
       packageId: PACKAGE_ID,
-      indexerUrl: walletUtils.getIndexerUrl().http,
-      indexerWsUrl: walletUtils.getIndexerUrl().ws,
     });
     this.dubhe = dubhe;
-    this.schemaId = SCHEMA_ID;
   }
 
   get store(): Phaser.Data.DataManager {
@@ -242,20 +241,6 @@ class DataManager extends Phaser.Events.EventEmitter {
     }
   }
 
-  async getInventory(): Promise<InventoryItem[]> {
-    // const items: InventoryItem[] = [];
-    // const inventory: Inventory = this.#store.get(DATA_MANAGER_STORE_KEYS.INVENTORY);
-    // inventory.forEach(baseItem => {
-    //   const item = DataUtils.getItem(scene, baseItem.item.id);
-    //   items.push({
-    //     item: item,
-    //     quantity: baseItem.quantity,
-    //   });
-    // });
-    const items = await this.getOwnedItems();
-    return items;
-  }
-
   updateInventory(items: InventoryItem[]) {
     const inventory = items.map(item => {
       return {
@@ -339,7 +324,6 @@ class DataManager extends Phaser.Events.EventEmitter {
 
   async initializeData(data: GlobalState) {
     await this.updatePlayerPosition();
-    await this.updateMonsters();
 
     this.#store.set({
       [DATA_MANAGER_STORE_KEYS.PLAYER_DIRECTION]: data.player.direction,
@@ -359,7 +343,6 @@ class DataManager extends Phaser.Events.EventEmitter {
 
   async #dataManagerDataToGlobalStateObject(): Promise<GlobalState> {
     const playerPosition = await this.updatePlayerPosition();
-    const monstersInParty = await this.updateMonsters();
     return {
       player: {
         position: {
@@ -381,7 +364,7 @@ class DataManager extends Phaser.Events.EventEmitter {
       },
       gameStarted: this.#store.get(DATA_MANAGER_STORE_KEYS.GAME_STARTED),
       monsters: {
-        inParty: [...monstersInParty],
+        inParty: [],
       },
       inventory: this.#store.get(DATA_MANAGER_STORE_KEYS.INVENTORY),
       itemsPickedUp: [...(this.#store.get(DATA_MANAGER_STORE_KEYS.ITEMS_PICKED_UP) || [])],
@@ -391,205 +374,75 @@ class DataManager extends Phaser.Events.EventEmitter {
   }
 
   async updatePlayerPosition(): Promise<{ x: number; y: number; location: PlayerLocation }> {
-    const playerPosition = await this.dubhe.getStorageItem({
-      name: 'position',
-      key1: walletUtils.getCurrentAccount().address,
+    // const playerPosition = await this.dubhe.getStorageItem({
+    //   name: 'position',
+    //   key1: walletUtils.getCurrentAccount().address,
+    // });
+    const playerPosition = await walletUtils.graphqlClient.getTableByCondition('position', {
+      player: walletUtils.getCurrentAccount().address,
     });
+    console.log('playerPosition', playerPosition);
+    console.log('walletUtils.getCurrentAccount().address', walletUtils.getCurrentAccount().address);
 
-    if (playerPosition?.value) {
+    if (playerPosition) {
       this.#store.set({
         [DATA_MANAGER_STORE_KEYS.PLAYER_POSITION]: {
-          x: Number(playerPosition.value.x) * TILE_SIZE,
-          y: Number(playerPosition.value.y) * TILE_SIZE,
+          x: Number(playerPosition.x) * TILE_SIZE,
+          y: Number(playerPosition.y) * TILE_SIZE,
         },
       });
 
       this.#store.set({
-        [DATA_MANAGER_STORE_KEYS.PLAYER_LOCATION]: LOCATION_TYPE[playerPosition.value.map_id],
+        [DATA_MANAGER_STORE_KEYS.PLAYER_LOCATION]: LOCATION_TYPE[0],
       });
 
       return {
-        x: Number(playerPosition.value.x) * TILE_SIZE,
-        y: Number(playerPosition.value.y) * TILE_SIZE,
-        location: LOCATION_TYPE[playerPosition.value.map_id],
+        x: Number(playerPosition.x) * TILE_SIZE,
+        y: Number(playerPosition.y) * TILE_SIZE,
+        location: LOCATION_TYPE[0],
       };
     }
+    console.log('=========playerPosition not found');
     return { x: 0, y: 0, location: { area: 'main_1', isInterior: false } };
   }
 
-  async updateMonsters(): Promise<Monster[]> {
-    const playerMonstersId = await this.dubhe.getStorageItem({
-      name: 'monster_owned_by',
-      key1: walletUtils.getCurrentAccount().address,
-    });
-    console.log('playerMonstersId', playerMonstersId);
-    if (playerMonstersId === undefined) {
-      return [];
-    }
+  async getAllPlayersPositions(): Promise<Array<{ player: string; x: number; y: number }>> {
+    try {
+      // Query all player positions from the position table without conditions
+      // This will return all records in the position table
+      const allPositions = await walletUtils.graphqlClient.getAllTables('position');
+      console.log('========= getAllPlayersPositions - Raw data:', JSON.stringify(allPositions, null, 2));
 
-    const playerMonsters: Monster[] = await Promise.all(
-      playerMonstersId.value.map(async (monsterSchema: any) => {
-        const monster = await this.dubhe.getStorageItem({
-          name: 'monster',
-          key1: monsterSchema.toString(),
-        });
-        if (monster === undefined) {
-          throw new Error('Monster not found');
-        }
-        return {
-          id: monster.data.key1.toString(),
-          monsterId: Number(monster.data.key1),
-          name: monster.value.name,
-          assetKey: monster.value.name.toUpperCase(),
-          assetFrame: Number(monster.value.asset_frame),
-          currentLevel: Number(monster.value.current_level),
-          maxHp: Number(monster.value.max_hp),
-          currentHp: Number(monster.value.current_hp),
-          baseAttack: Number(monster.value.base_attack),
-          attackIds: monster.value.attack_ids.map((attackId: string) => Number(attackId)),
-          currentAttack: Number(monster.value.current_attack),
-          baseExp: Number(monster.value.base_exp),
-          currentExp: Number(monster.value.current_exp),
-        };
-      }),
-    );
-    console.log('playerMonsters', playerMonsters);
-
-    this.#store.set({
-      [DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY]: playerMonsters,
-    });
-    const viewedEvents: Set<number> = new Set(this.#store.get(DATA_MANAGER_STORE_KEYS.VIEWED_EVENTS) || []);
-    viewedEvents.add(1); // talk with mom
-    viewedEvents.add(2); // claim monster
-    this.#store.set(DATA_MANAGER_STORE_KEYS.VIEWED_EVENTS, Array.from(viewedEvents));
-
-    return playerMonsters;
-  }
-
-  async hasEncounter(): Promise<EncounterData | null> {
-    const encounter = await this.dubhe.getStorageItem({
-      name: 'encounter',
-      key1: walletUtils.getCurrentAccount().address,
-      is_removed: false,
-    });
-    console.log('hasEncounter encounter', encounter);
-    if (encounter) {
-      return {
-        monsterId: Number(encounter.value.monster_id),
-        playerMonsterId: Number(encounter.value.player_monster_id),
-        isBattling: encounter.value.is_battling,
-      };
-    }
-    return null;
-  }
-
-  async getEncounterMonster(): Promise<EncounterMonsterData | null> {
-    const encounter = await this.dubhe.getStorageItem({
-      name: 'encounter',
-      key1: walletUtils.getCurrentAccount().address,
-      is_removed: false,
-    });
-    if (encounter) {
-      const monster = await this.dubhe.getStorageItem({
-        name: 'monster',
-        key1: encounter.value.monster_id.toString(),
-      });
-      if (monster === undefined) {
-        throw new Error('Monster not found');
+      // Check if the result has the edges structure (GraphQL pagination format)
+      if (allPositions && allPositions.edges && Array.isArray(allPositions.edges)) {
+        console.log('========= Processing edges format, found', allPositions.edges.length, 'players');
+        const result = allPositions.edges.map((edge: any) => ({
+          player: edge.node.player,
+          x: Number(edge.node.x) * TILE_SIZE,
+          y: Number(edge.node.y) * TILE_SIZE,
+        }));
+        console.log('========= Processed player positions:', result);
+        return result;
       }
-      console.log('getEncounterMonster encounter', encounter);
-      console.log('getEncounterMonster monster', monster);
-      return {
-        monster: {
-          id: monster.data.key1.toString(),
-          monsterId: Number(monster.data.key1),
-          name: monster.value.name,
-          assetKey: monster.value.name.toUpperCase(),
-          assetFrame: Number(monster.value.asset_frame),
-          currentLevel: Number(monster.value.current_level),
-          maxHp: Number(monster.value.max_hp),
-          currentHp: Number(monster.value.current_hp),
-          baseAttack: Number(monster.value.base_attack),
-          attackIds: monster.value.attack_ids.map((attackId: string) => Number(attackId)),
-          currentAttack: Number(monster.value.current_attack),
-          baseExp: Number(monster.value.base_exp),
-          currentExp: Number(monster.value.current_exp),
-        },
-        playerMonsterId: Number(encounter.value.player_monster_id),
-        isBattling: encounter.value.is_battling,
-      };
-    }
-    return null;
-  }
 
-  async getItemMetadata(itemId: number): Promise<Item> {
-    const item = await this.dubhe.getStorageItem({
-      name: 'item_metadata',
-      key1: itemId.toString(),
-    });
-    return {
-      id: itemId,
-      name: item.value.name,
-      description: item.value.description,
-      category: Object.keys(item.value.item_type)[0] as ItemCategory,
-      isTransferable: item.value.is_transferable,
-      effect: ITEM_EFFECT.DEFAULT, // TODO: add effect
-    };
-  }
+      // If the result is a plain array, process it directly
+      if (Array.isArray(allPositions)) {
+        console.log('========= Processing array format, found', allPositions.length, 'players');
+        const result = allPositions.map((pos: any) => ({
+          player: pos.player,
+          x: Number(pos.x) * TILE_SIZE,
+          y: Number(pos.y) * TILE_SIZE,
+        }));
+        console.log('========= Processed player positions:', result);
+        return result;
+      }
 
-  async getOwnedItems(): Promise<InventoryItem[]> {
-    const pageSize = 10;
-    let balance = await this.dubhe.getStorage({
-      name: 'balance',
-      key1: walletUtils.getCurrentAccount().address,
-      is_removed: false,
-      first: pageSize,
-    });
-
-    let allBalanceData = [...balance.data];
-
-    while (balance.pageInfo.hasNextPage) {
-      const nextPage = await this.dubhe.getStorage({
-        name: 'balance',
-        key1: walletUtils.getCurrentAccount().address,
-        is_removed: false,
-        first: pageSize,
-        after: balance.pageInfo.endCursor,
-      });
-
-      allBalanceData = [...allBalanceData, ...nextPage.data];
-      balance = nextPage;
-    }
-
-    if (allBalanceData.length === 0) {
+      console.warn('========= Unexpected data format from getAllTables');
+      return [];
+    } catch (error) {
+      console.error('Failed to fetch all players positions:', error);
       return [];
     }
-    console.log('allBalanceData', allBalanceData);
-    const items: InventoryItem[] = await Promise.all(
-      allBalanceData.map(async (balanceSchema: any) => {
-        const item = await this.dubhe.getStorageItem({
-          name: 'item_metadata',
-          key1: balanceSchema.key2.toString(),
-        });
-        console.log('balanceSchema', balanceSchema);
-        console.log('item', item);
-        return {
-          item: {
-            id: Number(balanceSchema.key2),
-            name: item.value.name,
-            description: item.value.description,
-            isTransferable: item.value.is_transferable,
-            category: Object.keys(item.value.item_type)[0] as ItemCategory,
-            effect: ITEM_EFFECT.DEFAULT, // TODO: add effect
-          },
-          quantity: Number(balanceSchema.value),
-        };
-      }),
-    );
-
-    items.sort((a, b) => a.item.id - b.item.id);
-
-    return items;
   }
 }
 

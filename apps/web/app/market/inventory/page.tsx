@@ -19,7 +19,7 @@ import { Label } from '@workspace/ui/components/label';
 import { dataManager } from '@/game/utils/data-manager';
 import { InventoryItem, ITEM_EFFECT, ItemCategory } from '@/game/types/typedef';
 import { Dubhe, loadMetadata, Transaction } from '@0xobelisk/sui-client';
-import { NETWORK, PACKAGE_ID, SCHEMA_ID } from 'contracts/deployment';
+import { NETWORK, PACKAGE_ID } from 'contracts/deployment';
 import { useCustomWallet } from '@/contexts/CustomWallet';
 import { DubheService } from '@/contexts/DubheService';
 
@@ -138,76 +138,6 @@ export default function InventoryPage() {
     // getAddressSeed,
   } = useCustomWallet();
 
-  const getOwnedItems = async (): Promise<InventoryItem[]> => {
-    const pageSize = 10;
-    // const metadata = await loadMetadata(NETWORK, PACKAGE_ID);
-    // 直接使用环境变量获取私钥
-    // let PRIVATEKEY = process.env.NEXT_PUBLIC_PRIVATE_KEY;
-    let currentAddress: string | undefined;
-
-    // const dubhe = new Dubhe({
-    //   networkType: NETWORK,
-    //   packageId: PACKAGE_ID,
-    //   metadata: metadata,
-    //   secretKey: NETWORK === 'localnet' ? PRIVATEKEY : undefined,
-    // });
-    const dubheService = new DubheService();
-
-    currentAddress = dubheService.getWalletAddress();
-
-    let balance = await dubheService.dubhe.getStorage({
-      name: 'balance',
-      key1: currentAddress,
-      is_removed: false,
-      first: pageSize,
-    });
-
-    let allBalanceData = [...balance.data];
-
-    while (balance.pageInfo.hasNextPage) {
-      const nextPage = await dubheService.dubhe.getStorage({
-        name: 'balance',
-        key1: currentAddress,
-        is_removed: false,
-        first: pageSize,
-        after: balance.pageInfo.endCursor,
-      });
-
-      allBalanceData = [...allBalanceData, ...nextPage.data];
-      balance = nextPage;
-    }
-
-    if (allBalanceData.length === 0) {
-      return [];
-    }
-    console.log('allBalanceData', allBalanceData);
-    const items: InventoryItem[] = await Promise.all(
-      allBalanceData.map(async (balanceSchema: any) => {
-        const item = await dubheService.dubhe.getStorageItem({
-          name: 'item_metadata',
-          key1: balanceSchema.key2.toString(),
-        });
-        console.log('balanceSchema', balanceSchema);
-        console.log('item', item);
-        return {
-          item: {
-            id: Number(balanceSchema.key2),
-            name: item.value.name,
-            description: item.value.description,
-            isTransferable: item.value.is_transferable,
-            category: Object.keys(item.value.item_type)[0] as ItemCategory,
-            effect: ITEM_EFFECT.DEFAULT, // TODO: add effect
-          },
-          quantity: Number(balanceSchema.value),
-        };
-      }),
-    );
-
-    items.sort((a, b) => a.item.id - b.item.id);
-
-    return items;
-  };
-
   // 确保页面可以滚动 - 移动到组件内部
   useEffect(() => {
     document.body.style.overflow = 'auto';
@@ -224,22 +154,6 @@ export default function InventoryPage() {
     const fetchInventory = async () => {
       try {
         setLoading(true);
-        const items = await getOwnedItems();
-
-        // 在 useEffect 中修改数据转换逻辑
-        const formattedItems = items.map(item => {
-          return {
-            id: item.item.id.toString(),
-            name: item.item.name,
-            image: `/assets/images/items/placeholder.png`,
-            category: item.item.category.toLowerCase(),
-            quantity: item.quantity,
-            description: item.item.description,
-            isTransferable: item.item.isTransferable,
-          };
-        });
-
-        setInventory(formattedItems);
       } catch (error) {
         console.error('获取库存数据失败:', error);
         // 如果API调用失败，可以使用空数组或保留旧数据
@@ -310,9 +224,7 @@ export default function InventoryPage() {
   };
 
   const handleQuantityChange = (itemId: string, quantity: number) => {
-    setSelectedItems(selectedItems.map(item => 
-      item.id === itemId ? { ...item, quantity } : item
-    ));
+    setSelectedItems(selectedItems.map(item => (item.id === itemId ? { ...item, quantity } : item)));
   };
 
   // 移除 MOCK_INVENTORY 和 RARITY_COLORS
@@ -364,7 +276,6 @@ export default function InventoryPage() {
       //   period
       // });
 
-
       // const tx = new Transaction();
       // const dubheService = new DubheService();
       // const clock = tx.object("0x6");
@@ -377,7 +288,7 @@ export default function InventoryPage() {
       //     itemQuantities,  // vector<u256>
       //     price,           // u256
       //     clock,
-      //     period,  
+      //     period,
       //   ],
       //   isRaw: false, // optional, defaults to false
       //   onSuccess: async (result) => {
@@ -496,13 +407,16 @@ export default function InventoryPage() {
                       {selectedItems.map(selectedItem => {
                         const inventoryItem = inventory.find(i => i.id === selectedItem.id);
                         if (!inventoryItem) return null;
-                        
+
                         return (
-                          <div key={selectedItem.id} className="flex items-center justify-between p-2 bg-gray-800 rounded">
+                          <div
+                            key={selectedItem.id}
+                            className="flex items-center justify-between p-2 bg-gray-800 rounded"
+                          >
                             <div className="flex items-center">
-                              <img 
-                                src={inventoryItem.image} 
-                                alt={inventoryItem.name} 
+                              <img
+                                src={inventoryItem.image}
+                                alt={inventoryItem.name}
                                 className="w-8 h-8 rounded mr-2"
                               />
                               <span>{inventoryItem.name}</span>
@@ -511,7 +425,7 @@ export default function InventoryPage() {
                               type="number"
                               min="1"
                               value={selectedItem.quantity}
-                              onChange={(e) => handleQuantityChange(selectedItem.id, parseInt(e.target.value) || 1)}
+                              onChange={e => handleQuantityChange(selectedItem.id, parseInt(e.target.value) || 1)}
                               className="w-20 px-2 py-1 bg-gray-700 rounded"
                             />
                           </div>

@@ -10,7 +10,6 @@ export type PlayerConfigProps = {
   collisionLayer: Phaser.Tilemaps.TilemapLayer;
   entranceLayer?: Phaser.Tilemaps.ObjectLayer;
   enterEntranceCallback: (entranceName: string, entranceId: string, isBuildingEntrance: boolean) => Promise<void>;
-  schemaId: string;
 };
 
 export type PlayerConfig = Omit<CharacterConfig, 'assetKey' | 'idleFrameConfig'> & PlayerConfigProps;
@@ -18,7 +17,6 @@ export type PlayerConfig = Omit<CharacterConfig, 'assetKey' | 'idleFrameConfig'>
 export class Player extends Character {
   #entranceLayer: Phaser.Tilemaps.ObjectLayer | undefined;
   #enterEntranceCallback: (entranceName: string, entranceId: string, isBuildingEntrance: boolean) => Promise<void>;
-  schemaId: string;
 
   constructor(config: PlayerConfig) {
     super({
@@ -32,11 +30,9 @@ export class Player extends Character {
         LEFT: 10,
         RIGHT: 4,
       },
-      schemaId: config.schemaId,
     });
     this.#entranceLayer = config.entranceLayer;
     this.#enterEntranceCallback = config.enterEntranceCallback;
-    this.schemaId = config.schemaId;
   }
 
   async moveCharacter(direction: Direction) {

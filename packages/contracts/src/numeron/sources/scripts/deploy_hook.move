@@ -11,9 +11,9 @@
   use std::ascii::string;
   use numeron::tx_digest;
   public(package) fun run(dapp_hub: &mut DappHub, ctx: &mut TxContext) { 
-    map_system::force_register(dapp_hub, string(b"0xc84ba871346dc957269d05b389df50e56ab0f57b466d1084edf734a323993b47"), 0, 0, ctx);
-    map_system::force_register(dapp_hub, string(b"0xcdd077770ceb5271e42289ee1a9b3a19442f445d"), 0, 0, ctx);
-    map_system::force_register(dapp_hub, string(b"3vy8k1NAc3Q9EPvqrAuS4DG4qwbgVqfxznEdtcrL743L"), 0, 0, ctx);
+    map_system::force_register(dapp_hub, string(b"0x76e2af4ffd1dbb031046eb9a894655c7961938224a580d432f820287cab52385"), 1, 1, ctx);
+    map_system::force_register(dapp_hub, string(b"0xcdd077770ceb5271e42289ee1a9b3a19442f445d"), 3, 5, ctx);
+    map_system::force_register(dapp_hub, string(b"3vy8k1NAc3Q9EPvqrAuS4DG4qwbgVqfxznEdtcrL743L"), 7, 1, ctx);
   }
 
 }

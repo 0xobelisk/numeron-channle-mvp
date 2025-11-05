@@ -1,8 +1,7 @@
 import { Controls } from '../utils/controls';
-import { Dubhe } from '@0xobelisk/sui-client';
-import { NETWORK, PACKAGE_ID, SCHEMA_ID, DUBHE_SCHEMA_ID } from 'contracts/deployment';
-import { loadMetadata } from '@0xobelisk/sui-client';
-import { walletUtils } from '../utils/wallet-utils';
+import { Dubhe, SuiMoveNormalizedModules } from '@0xobelisk/sui-client';
+import { NETWORK, PACKAGE_ID, DUBHE_SCHEMA_ID } from 'contracts/deployment';
+import contractMetadata from 'contracts/metadata.json';
 
 export class BaseScene extends Phaser.Scene {
   _controls: Controls;
@@ -15,7 +14,6 @@ export class BaseScene extends Phaser.Scene {
     if (this.constructor === BaseScene) {
       throw new Error('BaseScene is an abstract class and cannot be instantiated.');
     }
-    this._schemaId = SCHEMA_ID;
     this._dubheSchemaId = DUBHE_SCHEMA_ID;
   }
 
@@ -38,14 +36,10 @@ export class BaseScene extends Phaser.Scene {
     this.events.on(Phaser.Scenes.Events.RESUME, this.handleSceneResume, this);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneCleanup, this);
 
-    const metadata = await loadMetadata(NETWORK, PACKAGE_ID);
-
     this._dubhe = new Dubhe({
       networkType: NETWORK,
       packageId: PACKAGE_ID,
-      metadata: metadata,
-      indexerUrl: walletUtils.getIndexerUrl().http,
-      indexerWsUrl: walletUtils.getIndexerUrl().ws,
+      metadata: contractMetadata as SuiMoveNormalizedModules,
     });
 
     this.scene.bringToTop();

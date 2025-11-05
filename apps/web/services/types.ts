@@ -1,5 +1,4 @@
-import { Transaction } from '@mysten/sui/transactions';
-import { SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions } from '@0xobelisk/sui-client';
+import { Transaction, SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions } from '@0xobelisk/sui-client';
 
 export interface CustomWalletServiceConfig {
   suiNetwork: string;

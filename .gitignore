@@ -44,3 +44,6 @@ apps/web/chain/key.ts
 *.db
 
 .idea
+
+.pnpm-store/
+.data/

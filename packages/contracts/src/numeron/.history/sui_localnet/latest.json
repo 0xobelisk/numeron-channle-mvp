@@ -1,0 +1,41 @@
+{
+  "projectName": "numeron",
+  "network": "localnet",
+  "startCheckpoint": "119",
+  "packageId": "0x83a517adb1756234ce99e113088697c6fc3cb4ddfe23123a41f14dbfc82a77d5",
+  "dappHub": "",
+  "upgradeCap": "0xa9d91e51b84b6986028a43008ffd5ee17cfa5d7b6e1cbd917141191c68e98618",
+  "version": 1,
+  "components": {},
+  "resources": {
+    "position": {
+      "fields": {
+        "player": "String",
+        "x": "u64",
+        "y": "u64"
+      },
+      "keys": [
+        "player"
+      ]
+    },
+    "item_dropped": {
+      "offchain": true,
+      "fields": {
+        "player": "String",
+        "item_type": "ItemType"
+      }
+    }
+  },
+  "enums": {
+    "ItemType": [
+      "Ball",
+      "Currency",
+      "Food",
+      "Medicine",
+      "Material",
+      "SkillBook",
+      "Scroll",
+      "TreasureChest"
+    ]
+  }
+}
