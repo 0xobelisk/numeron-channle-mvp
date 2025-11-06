@@ -7,7 +7,6 @@ import {
   Transaction,
 } from '@0xobelisk/sui-client';
 import { PACKAGE_ID, NETWORK, DUBHE_SCHEMA_ID } from 'contracts/deployment';
-import { getWalletInfo } from './CustomWallet';
 import { InventoryItem, ITEM_EFFECT, ItemCategory, LOCATION_TYPE, Monster } from '@/game/types/typedef';
 import { PlayerLocation } from '@/game/utils/data-manager';
 import { TILE_SIZE } from '@/game/config';
@@ -86,22 +85,10 @@ export class DubheService {
    * @returns Account info object or null (if wallet not connected)
    */
   getCurrentAccount() {
-    if (this.network === 'localnet') {
-      return {
-        address: this.dubhe.getAddress(),
-        email: '',
-        isUsingEnoki: false,
-      };
-    }
-    const { address, emailAddress, isUsingEnoki, isConnected } = getWalletInfo();
-    if (isConnected) {
-      return {
-        address,
-        email: emailAddress,
-        isUsingEnoki,
-      };
-    }
-    return null;
+    return {
+      address: this.dubhe.getAddress(),
+      email: '',
+    };
   }
 
   public async signAndExecuteTransaction({
@@ -114,21 +101,8 @@ export class DubheService {
     onError?: (error: Error) => void;
   }): Promise<SuiTransactionBlockResponse | null> {
     try {
-      if (this.network === 'localnet') {
-        console.log('sui address', this.dubhe.getAddress());
-        return await this.dubhe.signAndSendTxn({
-          tx,
-          onSuccess,
-          onError,
-        });
-      }
-
-      if (!getWalletInfo().isConnected) {
-        console.error('Wallet not connected, please connect first');
-        return null;
-      }
-
-      return await getWalletInfo().signAndExecuteTransaction({
+      console.log('sui address', this.dubhe.getAddress());
+      return await this.dubhe.signAndSendTxn({
         tx,
         onSuccess,
         onError,
@@ -159,7 +133,7 @@ export class DubheService {
    * @returns Boolean indicating if wallet is connected
    */
   public isWalletConnected(): boolean {
-    return getWalletInfo().isConnected || false;
+    return true;
   }
 
   /**
@@ -186,17 +160,15 @@ export class DubheService {
    * Logout current wallet
    */
   public logout(): void {
-    if (getWalletInfo().isConnected) {
-      getWalletInfo().logout();
-    }
+    // No wallet connection to logout from
+    console.log('Logout not needed');
   }
 
   /**
    * Redirect to authentication page
    */
   public redirectToAuth(): void {
-    if (getWalletInfo().isConnected) {
-      getWalletInfo().redirectToAuthUrl();
-    }
+    // No authentication needed
+    console.log('Authentication not needed');
   }
 }

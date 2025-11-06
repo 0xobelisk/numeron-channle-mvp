@@ -22,9 +22,6 @@ export interface SignAndExecuteTransactionProps {
 
 export interface WalletInfo {
   address: string;
-  isUsingEnoki: boolean;
-  emailAddress?: string;
-  jwt?: string;
 }
 
 export interface TransactionResult {

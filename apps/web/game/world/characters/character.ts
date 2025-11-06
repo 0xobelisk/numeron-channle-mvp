@@ -29,6 +29,7 @@ export interface CharacterConfig {
   spriteGridMovementStartedCallback?: (position: Coordinate) => boolean;
   dubhe?: Dubhe;
   playerAddress?: string; // player address to display above character
+  isCurrentPlayer?: boolean; // whether this is the current player
 }
 
 export class Character {
@@ -49,7 +50,10 @@ export class Character {
   _spriteGridMovementStartedCallback: (position: Coordinate) => boolean | undefined;
   dubhe?: Dubhe;
   _addressLabel?: Phaser.GameObjects.Text;
+  _addressLabelContainer?: Phaser.GameObjects.Container;
+  _addressLabelBackground?: Phaser.GameObjects.Graphics;
   _currentTween?: Phaser.Tweens.Tween; // Track current movement tween to prevent animation stacking
+  _isCurrentPlayer: boolean;
 
   constructor(config: CharacterConfig) {
     if (this.constructor === Character) {
@@ -74,6 +78,7 @@ export class Character {
     this._spriteGridMovementStartedCallback = config.spriteGridMovementStartedCallback;
     this.dubhe = config.dubhe;
     this._isChainMovementPending = false;
+    this._isCurrentPlayer = config.isCurrentPlayer || false;
 
     // Create address label if playerAddress is provided
     if (config.playerAddress) {
@@ -81,31 +86,139 @@ export class Character {
     }
   }
 
-  _createAddressLabel(address: string) {
-    // Format address: first 6 chars + ... + last 4 chars
-    const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
+  /**
+   * Detect address type based on format
+   * - Sui: 0x + 64 hex chars (32 bytes)
+   * - EVM: 0x + 40 hex chars (20 bytes)
+   * - Solana: Base58, no 0x prefix, typically 32-44 chars
+   */
+  _detectAddressType(address: string): 'sui' | 'evm' | 'solana' {
+    console.log('Detecting address type for:', address);
 
-    this._addressLabel = this._scene.add
-      .text(this._phaserGameObject.x, this._phaserGameObject.y - 35, shortAddress, {
-        fontSize: '16px',
-        color: '#ffffff',
-        backgroundColor: '#000000',
-        padding: { x: 6, y: 3 },
-      })
-      .setOrigin(0.5, 1)
-      .setDepth(1000);
+    if (address.startsWith('0x')) {
+      // Remove 0x prefix and check length
+      const hexPart = address.slice(2);
+      console.log('Hex part length:', hexPart.length);
+
+      if (hexPart.length === 64) {
+        console.log('Detected as SUI');
+        return 'sui'; // 32 bytes = 64 hex chars
+      } else if (hexPart.length === 40) {
+        console.log('Detected as EVM');
+        return 'evm'; // 20 bytes = 40 hex chars
+      } else {
+        // If 0x prefix but unusual length, assume Sui (more likely)
+        console.log('0x prefix but unusual length, defaulting to SUI');
+        return 'sui';
+      }
+    }
+    // Solana addresses are Base58 encoded and don't start with 0x
+    console.log('Detected as Solana');
+    return 'solana';
+  }
+
+  /**
+   * Get gradient colors based on address type and whether it's current player
+   * Returns [startColor, endColor] for gradient
+   */
+  _getAddressGradientColors(addressType: 'sui' | 'evm' | 'solana'): [number, number] {
+    if (this._isCurrentPlayer) {
+      return [0xffd700, 0xffa500]; // Gold to orange gradient for current player
+    }
+
+    switch (addressType) {
+      case 'sui':
+        return [0x4da6ff, 0x2b7fcc]; // Sui blue gradient
+      case 'evm':
+        return [0x9945ff, 0x7722cc]; // EVM purple gradient
+      case 'solana':
+        return [0x14f195, 0x0ac073]; // Solana green gradient
+      default:
+        return [0x000000, 0x333333]; // Fallback black to gray
+    }
+  }
+
+  _createAddressLabel(address: string) {
+    // Display full address (no compression as per user requirement)
+    const displayAddress = address;
+
+    // Detect address type
+    const addressType = this._detectAddressType(address);
+    console.log('Address type:', addressType, 'Is current player:', this._isCurrentPlayer);
+
+    // Get gradient colors
+    const [startColor, endColor] = this._getAddressGradientColors(addressType);
+    console.log('Gradient colors:', startColor.toString(16), 'to', endColor.toString(16));
+
+    // Create text first to measure its dimensions
+    const textStyle = {
+      fontSize: '12px',
+      color: '#ffffff',
+      fontFamily: 'Arial',
+    };
+
+    this._addressLabel = this._scene.add.text(0, 0, displayAddress, textStyle).setOrigin(0.5, 0.5);
+
+    // Get text bounds
+    const textWidth = this._addressLabel.width;
+    const textHeight = this._addressLabel.height;
+    const paddingX = 8;
+    const paddingY = 4;
+    const bgWidth = textWidth + paddingX * 2;
+    const bgHeight = textHeight + paddingY * 2;
+    const borderRadius = 6;
+
+    // Create graphics for gradient background
+    this._addressLabelBackground = this._scene.add.graphics();
+
+    // Use fillStyle for solid background (more reliable than fillGradientStyle)
+    // We'll use startColor as the main color
+    this._addressLabelBackground.fillStyle(startColor, 1.0);
+    console.log('Drawing background with color:', startColor.toString(16));
+
+    // Draw rounded rectangle
+    this._addressLabelBackground.fillRoundedRect(-bgWidth / 2, -bgHeight / 2, bgWidth, bgHeight, borderRadius);
+
+    // Add gradient effect by drawing a semi-transparent darker overlay on bottom half
+    this._addressLabelBackground.fillStyle(endColor, 0.4);
+    this._addressLabelBackground.fillRect(-bgWidth / 2, 0, bgWidth, bgHeight / 2);
+
+    // Add a subtle border for better visibility
+    this._addressLabelBackground.lineStyle(2, 0xffffff, 0.5);
+    this._addressLabelBackground.strokeRoundedRect(-bgWidth / 2, -bgHeight / 2, bgWidth, bgHeight, borderRadius);
+
+    // Create container to hold both background and text
+    this._addressLabelContainer = this._scene.add.container(
+      this._phaserGameObject.x,
+      this._phaserGameObject.y - 20, // Reduced from -35 to -20 to be closer to character
+      [this._addressLabelBackground, this._addressLabel],
+    );
+
+    this._addressLabelContainer.setDepth(1000);
   }
 
   _updateAddressLabelPosition() {
-    if (this._addressLabel) {
-      this._addressLabel.setPosition(this._phaserGameObject.x, this._phaserGameObject.y - 35);
+    if (this._addressLabelContainer) {
+      this._addressLabelContainer.setPosition(
+        this._phaserGameObject.x,
+        this._phaserGameObject.y - 20, // Reduced from -35 to -20
+      );
     }
   }
 
   destroy() {
+    // Destroy address label container and its contents
+    if (this._addressLabelContainer) {
+      this._addressLabelContainer.destroy();
+      this._addressLabelContainer = undefined;
+    }
     if (this._addressLabel) {
       this._addressLabel.destroy();
       this._addressLabel = undefined;
+    }
+    if (this._addressLabelBackground) {
+      this._addressLabelBackground.destroy();
+      this._addressLabelBackground = undefined;
     }
     if (this._phaserGameObject) {
       this._phaserGameObject.destroy();

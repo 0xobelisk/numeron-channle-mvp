@@ -11,7 +11,6 @@ import {
 } from '../utils/grid-utils';
 import { CANNOT_READ_SIGN_TEXT, SAMPLE_TEXT } from '../utils/text-utils';
 import { NPC, NPC_MOVEMENT_PATTERN } from '../world/characters/npc';
-import { WorldMenu } from '../world/world-menu';
 import { BaseScene } from './base-scene';
 import { DataUtils } from '../utils/data-utils';
 import { playBackgroundMusic, playSoundFx } from '../utils/audio-utils';
@@ -37,8 +36,6 @@ import {
   GameEventRemoveNpc,
   GameEventMoveToPlayer,
 } from '../types/typedef';
-import { MonsterPartySceneData } from './monster-party-scene';
-import { InventorySceneData } from './inventory-scene';
 import { PlayerLocation } from '../utils/data-manager';
 import { Dubhe, loadMetadata, SuiMoveNormalizedModules, Transaction } from '@0xobelisk/sui-client';
 import { DUBHE_SCHEMA_ID, NETWORK, PACKAGE_ID } from 'contracts/deployment';
@@ -108,7 +105,6 @@ export class WorldScene extends BaseScene {
   #chatUi: ChatScene;
   #npcs: NPC[];
   #npcPlayerIsInteractingWith: NPC | undefined;
-  #menu: WorldMenu;
   #sceneData: WorldSceneData;
   #items: Item[];
   #entranceLayer: Phaser.Tilemaps.ObjectLayer | undefined;
@@ -188,6 +184,7 @@ export class WorldScene extends BaseScene {
 
     this.#wildMonsterEncountered = false;
     this.#npcPlayerIsInteractingWith = undefined;
+    this.#npcs = []; // Initialize npcs as empty array
     this.#items = [];
     this.#lastNpcEventHandledIndex = -1;
     this.#isProcessingNpcEvent = false;
@@ -312,6 +309,7 @@ export class WorldScene extends BaseScene {
       },
       dubhe,
       playerAddress: currentPlayerAddress,
+      isCurrentPlayer: true, // Mark as current player for gold background
     });
 
     // Set depth to ensure player is visible above background
@@ -332,9 +330,6 @@ export class WorldScene extends BaseScene {
 
     // create foreground for depth
     this.add.image(0, 0, `${this.#sceneData.area.toUpperCase()}_FOREGROUND`, 0).setOrigin(0).setDepth(10);
-
-    // create menu
-    this.#menu = new WorldMenu(this);
 
     // create event zones
     this.#createEventEncounterZones(map);
@@ -442,72 +437,8 @@ export class WorldScene extends BaseScene {
       await this.#player.moveCharacter(selectedDirectionHeldDown);
     }
 
-    if (wasSpaceKeyPressed && !this.#player.isMoving && !this.#menu?.isVisible) {
+    if (wasSpaceKeyPressed && !this.#player.isMoving) {
       await this.#handlePlayerInteraction();
-    }
-
-    if (this._controls.wasEnterKeyPressed() && !this.#player.isMoving) {
-      if (this.#dialogUi.isVisible || this.#isProcessingNpcEvent) {
-        return;
-      }
-
-      if (this.#menu?.isVisible) {
-        this.#menu.hide();
-        return;
-      }
-
-      this.#menu.show();
-    }
-
-    if (this.#menu?.isVisible) {
-      if (selectedDirectionPressedOnce !== DIRECTION.NONE) {
-        this.#menu.handlePlayerInput(selectedDirectionPressedOnce);
-      }
-
-      if (wasSpaceKeyPressed) {
-        this.#menu.handlePlayerInput('OK');
-
-        if (this.#menu.selectedMenuOption === 'SAVE') {
-          this.#menu.hide();
-          dataManager.saveData();
-          this.#dialogUi.showDialogModal(['Game progress has been saved']);
-        }
-
-        if (this.#menu.selectedMenuOption === 'MONSTERS') {
-          // at start of the game, handle when we have no monsters in our party
-          if (dataManager.store.get(DATA_MANAGER_STORE_KEYS.MONSTERS_IN_PARTY).length === 0) {
-            this.#dialogUi.showDialogModal(['You have no monsters in your party.']);
-            this.#menu.hide();
-            return;
-          }
-
-          // pause this scene and launch the monster party scene
-          const sceneDataToPass: MonsterPartySceneData = {
-            previousSceneName: SCENE_KEYS.WORLD_SCENE,
-            isBattling: false,
-          };
-          this.scene.launch(SCENE_KEYS.MONSTER_PARTY_SCENE, sceneDataToPass);
-          this.scene.pause(SCENE_KEYS.WORLD_SCENE);
-        }
-
-        if (this.#menu.selectedMenuOption === 'BAG') {
-          // pause this scene and launch the inventory scene
-          const sceneDataToPass: InventorySceneData = {
-            previousSceneName: SCENE_KEYS.WORLD_SCENE,
-            isBattling: false,
-          };
-          this.scene.launch(SCENE_KEYS.INVENTORY_SCENE, sceneDataToPass);
-          this.scene.pause(SCENE_KEYS.WORLD_SCENE);
-        }
-
-        if (this.#menu.selectedMenuOption === 'EXIT') {
-          this.#menu.hide();
-        }
-      }
-
-      if (this._controls.wasBackKeyPressed()) {
-        this.#menu.hide();
-      }
     }
 
     this.#player.update(time);
@@ -676,16 +607,17 @@ export class WorldScene extends BaseScene {
       return;
     }
 
-    const nearbyNpc = this.#npcs.find(npc => {
-      return npc.sprite.x === targetPosition.x && npc.sprite.y === targetPosition.y;
-    });
-    if (nearbyNpc) {
-      nearbyNpc.facePlayer(this.#player.direction);
-      nearbyNpc.isTalkingToPlayer = true;
-      this.#npcPlayerIsInteractingWith = nearbyNpc;
-      this.#handleNpcInteraction();
-      return;
-    }
+    // NPC interaction removed - not needed for multiplayer
+    // const nearbyNpc = this.#npcs.find(npc => {
+    //   return npc.sprite.x === targetPosition.x && npc.sprite.y === targetPosition.y;
+    // });
+    // if (nearbyNpc) {
+    //   nearbyNpc.facePlayer(this.#player.direction);
+    //   nearbyNpc.isTalkingToPlayer = true;
+    //   this.#npcPlayerIsInteractingWith = nearbyNpc;
+    //   this.#handleNpcInteraction();
+    //   return;
+    // }
 
     // check for a nearby item and display message about player finding the item
     let nearbyItemIndex: number | undefined;
@@ -817,7 +749,6 @@ export class WorldScene extends BaseScene {
     return (
       this._controls.isInputLocked ||
       this.#dialogUi.isVisible ||
-      this.#menu?.isVisible ||
       this.#isProcessingNpcEvent ||
       this.#currentCutSceneId !== undefined
     );
@@ -929,6 +860,7 @@ export class WorldScene extends BaseScene {
           entranceLayer: this.#entranceLayer,
           enterEntranceCallback: async () => {}, // Other players don't trigger entrance events
           playerAddress: playerPos.player,
+          isCurrentPlayer: false, // Mark as other player for colored backgrounds
         });
 
         // Set depth to ensure other players are visible
@@ -1059,6 +991,7 @@ export class WorldScene extends BaseScene {
           entranceLayer: this.#entranceLayer,
           enterEntranceCallback: async () => {},
           playerAddress: playerAddress,
+          isCurrentPlayer: false, // Mark as other player for colored backgrounds
         });
 
         // Set depth to ensure new player is visible
@@ -1881,9 +1814,9 @@ export class WorldScene extends BaseScene {
 
     // Move existing texts down
     this.#transactionFeedTexts.forEach((text, index) => {
-      text.setY(startY + index * lineHeight);
+      text.setY(startY + (index + 1) * lineHeight);
       // Fade out older items
-      const alpha = 1 - index * 0.1;
+      const alpha = 1 - (index + 1) * 0.1;
       text.setAlpha(Math.max(alpha, 0.3));
     });
 

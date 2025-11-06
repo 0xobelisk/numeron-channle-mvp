@@ -1,34 +1,10 @@
 import { Dubhe, NetworkType, SuiMoveNormalizedModules, Transaction } from '@0xobelisk/sui-client';
 import { NETWORK, PACKAGE_ID } from 'contracts/deployment';
-import { SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions } from '@0xobelisk/sui-client';
-import {
-  ExecuteTransactionBlockWithoutSponsorshipProps,
-  SignAndExecuteTransactionProps,
-} from '@/contexts/CustomWallet';
+import { SuiTransactionBlockResponse } from '@0xobelisk/sui-client';
 import { DubheGraphqlClient } from '@0xobelisk/graphql-client';
 import { DubheGrpcClient } from '@0xobelisk/grpc-client';
 import contractMetadata from 'contracts/metadata.json';
 import dubheMetadata from 'contracts/dubhe.config.json';
-
-// Add customWallet property type to window object
-declare global {
-  interface Window {
-    customWallet?: {
-      isConnected: boolean;
-      isUsingEnoki: boolean;
-      address?: string;
-      jwt?: string;
-      emailAddress: string | null;
-      executeTransactionBlockWithoutSponsorship: (
-        props: ExecuteTransactionBlockWithoutSponsorshipProps,
-      ) => Promise<any>;
-      signAndExecuteTransaction: (props: SignAndExecuteTransactionProps) => Promise<any>;
-      logout: () => void;
-      redirectToAuthUrl: () => void;
-      getAddressSeed: () => Promise<string>;
-    };
-  }
-}
 
 /**
  * Wallet Utils Class - Provides methods for game interaction with wallet
@@ -94,21 +70,10 @@ class WalletUtils {
    * @returns Account info object or null (if wallet not connected)
    */
   public getCurrentAccount() {
-    if (this.network === 'localnet') {
-      return {
-        address: this.dubhe.getAddress(),
-        email: '',
-        isUsingEnoki: false,
-      };
-    }
-    if (window.customWallet && window.customWallet.isConnected) {
-      return {
-        address: window.customWallet.address,
-        email: window.customWallet.emailAddress,
-        isUsingEnoki: window.customWallet.isUsingEnoki,
-      };
-    }
-    return null;
+    return {
+      address: this.dubhe.getAddress(),
+      email: '',
+    };
   }
 
   // public async signAndExecuteTransaction({
@@ -199,12 +164,8 @@ class WalletUtils {
         return result;
       }
 
-      if (!window.customWallet || !window.customWallet.isConnected) {
-        console.error('Wallet not connected, please connect first');
-        return null;
-      }
-
-      return await window.customWallet.signAndExecuteTransaction({
+      // For non-localnet environments, use dubhe client directly
+      return await this.dubhe.signAndSendTxn({
         tx,
         onSuccess,
         onError,
@@ -231,7 +192,7 @@ class WalletUtils {
    * @returns Boolean indicating if wallet is connected
    */
   public isWalletConnected(): boolean {
-    return window.customWallet?.isConnected || false;
+    return true;
   }
 
   /**
@@ -260,18 +221,16 @@ class WalletUtils {
    * Logout current wallet
    */
   public logout(): void {
-    if (window.customWallet) {
-      window.customWallet.logout();
-    }
+    // No wallet connection to logout from
+    console.log('Logout not needed');
   }
 
   /**
    * Redirect to authentication page
    */
   public redirectToAuth(): void {
-    if (window.customWallet) {
-      window.customWallet.redirectToAuthUrl();
-    }
+    // No authentication needed
+    console.log('Authentication not needed');
   }
 }
 

@@ -1,36 +1,11 @@
 'use client';
 
-import { AuthenticationProvider } from '@/contexts/Authentication';
-// import { ChildrenProps } from '@/types';
 import React from 'react';
-import { EnokiFlowProvider } from '@mysten/enoki/react';
-import { createNetworkConfig, SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
+import { createNetworkConfig, SuiClientProvider } from '@mysten/dapp-kit';
 import { getFullnodeUrl } from '@0xobelisk/sui-client';
-// import { registerStashedWallet } from '@mysten/zksend';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import clientConfig from '@/config/clientConfig';
 import '@mysten/dapp-kit/dist/index.css';
-import CustomWalletProvider from '@/contexts/CustomWallet';
-
-export interface StorageAdapter {
-  setItem(key: string, value: string): Promise<void>;
-  getItem(key: string): Promise<string | null>;
-  removeItem(key: string): Promise<void>;
-}
-
-const sessionStorageAdapter: StorageAdapter = {
-  getItem: async key => {
-    return sessionStorage.getItem(key);
-  },
-  setItem: async (key, value) => {
-    sessionStorage.setItem(key, value);
-  },
-  removeItem: async key => {
-    sessionStorage.removeItem(key);
-  },
-};
-
-// registerStashedWallet('Breaking the Ice - Community Vote', {});
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const { networkConfig } = createNetworkConfig({
@@ -43,15 +18,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <SuiClientProvider networks={networkConfig} defaultNetwork={clientConfig.SUI_NETWORK_NAME}>
-        <WalletProvider autoConnect storage={sessionStorageAdapter}>
-          <EnokiFlowProvider apiKey={clientConfig.ENOKI_API_KEY}>
-            <AuthenticationProvider>
-              <CustomWalletProvider>
-                <main>{children}</main>
-              </CustomWalletProvider>
-            </AuthenticationProvider>
-          </EnokiFlowProvider>
-        </WalletProvider>
+        <main>{children}</main>
       </SuiClientProvider>
     </QueryClientProvider>
   );

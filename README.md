@@ -10,13 +10,23 @@ A project built on the Dubhe framework.
 
 ## Getting Started
 
-### 1. Install Dependencies
+### 1. Configure Environment Variables
+
+Copy the example environment file to create your local configuration:
+
+```bash
+cp apps/web/.env.example apps/web/.env
+```
+
+This will set up a pre-configured test account for you.
+
+### 2. Install Dependencies
 
 ```bash
 pnpm install
 ```
 
-### 2. Check Development Environment
+### 3. Check Development Environment
 
 Run the following command to check your environment and download Sui binaries:
 
@@ -24,7 +34,7 @@ Run the following command to check your environment and download Sui binaries:
 pnpm dubhe doctor
 ```
 
-### 3. Install Dubhe Channel Binary
+### 4. Install Dubhe Channel Binary
 
 Download the `dubhe-channel` binary and place it in the `~/.dubhe/bin` directory:
 
@@ -46,7 +56,7 @@ curl -L https://github.com/0xobelisk/dubhe/releases/download/v1.2.0-pre.86/dubhe
 chmod +x ~/.dubhe/bin/dubhe-channel
 ```
 
-### 4. Start the Project
+### 5. Start the Project
 
 ```bash
 pnpm dev
