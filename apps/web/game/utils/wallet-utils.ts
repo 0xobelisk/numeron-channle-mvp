@@ -111,6 +111,41 @@ class WalletUtils {
     return null;
   }
 
+  // public async signAndExecuteTransaction({
+  //   tx,
+  //   onSuccess,
+  //   onError,
+  // }: {
+  //   tx: Transaction;
+  //   onSuccess?: (result: SuiTransactionBlockResponse) => void;
+  //   onError?: (error: Error) => void;
+  // }): Promise<SuiTransactionBlockResponse | null> {
+  //   try {
+  //     if (this.network === 'localnet') {
+  //       console.log('sui address', this.dubhe.getAddress());
+  //       return await this.dubhe.signAndSendTxn({
+  //         tx,
+  //         onSuccess,
+  //         onError,
+  //       });
+  //     }
+
+  //     if (!window.customWallet || !window.customWallet.isConnected) {
+  //       console.error('Wallet not connected, please connect first');
+  //       return null;
+  //     }
+
+  //     return await window.customWallet.signAndExecuteTransaction({
+  //       tx,
+  //       onSuccess,
+  //       onError,
+  //     });
+  //   } catch (error) {
+  //     console.error('Transaction execution failed:', error);
+  //     return null;
+  //   }
+  // }
+
   public async signAndExecuteTransaction({
     tx,
     onSuccess,
@@ -123,11 +158,45 @@ class WalletUtils {
     try {
       if (this.network === 'localnet') {
         console.log('sui address', this.dubhe.getAddress());
-        return await this.dubhe.signAndSendTxn({
-          tx,
-          onSuccess,
-          onError,
+
+        const chain = 'sui';
+        const sender = this.dubhe.getAddress();
+        const nonce = Date.now(); // Use timestamp as nonce
+        const ptb = tx.getData();
+
+        // Prepare API request payload
+        const payload = {
+          chain,
+          sender,
+          nonce,
+          ptb,
+          signature: 'base64_encoded_signature_placeholder',
+        };
+
+        console.log('Submitting transaction to API:', payload);
+
+        // Submit transaction via API
+        const response = await fetch(`${this.endpoint.grpc}/submit`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
         });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`API request failed: ${response.status} ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('Transaction submitted successfully:', result);
+
+        if (onSuccess) {
+          onSuccess(result);
+        }
+
+        return result;
       }
 
       if (!window.customWallet || !window.customWallet.isConnected) {
@@ -142,6 +211,9 @@ class WalletUtils {
       });
     } catch (error) {
       console.error('Transaction execution failed:', error);
+      if (onError && error instanceof Error) {
+        onError(error);
+      }
       return null;
     }
   }

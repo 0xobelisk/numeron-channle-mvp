@@ -321,48 +321,67 @@ export class Character {
           isRaw: true,
         });
 
-        // 发送交易并等待结果
-        await walletUtils.signAndExecuteTransaction({
-          tx: stepTxB,
-          onSuccess: async (result: any) => {
-            console.log(`Move transaction successful:`, result);
+        // 乐观更新：立即开始播放动画，同时在后台处理交易
+        const animationDuration = 200;
 
-            // 交易成功后执行动画
-            await new Promise<void>(resolve => {
-              if (!this._scene || !this._scene.add || typeof this._scene.add.tween !== 'function') {
-                console.warn('场景或动画功能不可用，可能是场景正在切换');
-                resolve();
-                return;
-              }
-              this._scene.add.tween({
-                delay: 0,
-                duration: 600,
-                y: {
-                  from: this._phaserGameObject.y,
-                  start: this._phaserGameObject.y,
-                  to: this._targetPosition.y,
-                },
-                x: {
-                  from: this._phaserGameObject.x,
-                  start: this._phaserGameObject.x,
-                  to: this._targetPosition.x,
-                },
-                targets: this._phaserGameObject,
-                onUpdate: () => {
-                  this._updateAddressLabelPosition();
-                },
-                onComplete: () => {
-                  this._updateAddressLabelPosition();
-                  resolve();
-                },
-              });
-            });
+        // 先立即播放动画，给用户即时反馈
+        const animationPromise = new Promise<void>((resolve, reject) => {
+          if (!this._scene || !this._scene.add || typeof this._scene.add.tween !== 'function') {
+            console.warn('场景或动画功能不可用，可能是场景正在切换');
+            resolve();
+            return;
+          }
+
+          this._scene.add.tween({
+            delay: 0,
+            duration: animationDuration,
+            y: {
+              from: this._phaserGameObject.y,
+              start: this._phaserGameObject.y,
+              to: this._targetPosition.y,
+            },
+            x: {
+              from: this._phaserGameObject.x,
+              start: this._phaserGameObject.x,
+              to: this._targetPosition.x,
+            },
+            targets: this._phaserGameObject,
+            onUpdate: () => {
+              this._updateAddressLabelPosition();
+            },
+            onComplete: () => {
+              this._updateAddressLabelPosition();
+              resolve();
+            },
+          });
+        });
+
+        // 同时发送交易（不阻塞动画）
+        let transactionSuccess = false;
+        const transactionPromise = walletUtils.signAndExecuteTransaction({
+          tx: stepTxB,
+          onSuccess: (result: any) => {
+            console.log(`Move transaction successful:`, result);
+            transactionSuccess = true;
           },
           onError: (error: any) => {
             console.error(`Move transaction failed:`, error);
-            throw error;
+            // 注意：不在这里throw，而是在Promise.all之后处理
           },
         });
+
+        // 等待动画和交易都完成
+        await Promise.all([animationPromise, transactionPromise]);
+
+        // 检查交易是否成功
+        if (!transactionSuccess) {
+          // 交易失败，需要回退角色位置
+          console.warn('Transaction failed, reverting character position');
+          this._phaserGameObject.x = originalPosition.x;
+          this._phaserGameObject.y = originalPosition.y;
+          this._updateAddressLabelPosition();
+          throw new Error('Transaction failed');
+        }
 
         // 移动成功，更新状态
         this._previousTargetPosition = { ...this._targetPosition };
@@ -376,7 +395,7 @@ export class Character {
           }
           this._scene.add.tween({
             delay: 0,
-            duration: 1200,
+            duration: 600,
             y: {
               from: this._phaserGameObject.y,
               start: this._phaserGameObject.y,
@@ -402,9 +421,10 @@ export class Character {
       console.error('Movement failed:', error);
       // 回退内部状态
       this._targetPosition = { ...this._previousTargetPosition };
-      // 回退角色精灵位置
+      // 回退角色精灵位置（如果还没回退的话）
       this._phaserGameObject.x = originalPosition.x;
       this._phaserGameObject.y = originalPosition.y;
+      this._updateAddressLabelPosition();
     } finally {
       this._isMoving = false;
       this._isChainMovementPending = false;

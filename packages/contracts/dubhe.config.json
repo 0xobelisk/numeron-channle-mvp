@@ -14,9 +14,7 @@
             "y": "u64"
           }
         ],
-        "keys": [
-          "player"
-        ],
+        "keys": ["player"],
         "offchain": false
       }
     },
@@ -59,9 +57,7 @@
             "total_paid": "u256"
           }
         ],
-        "keys": [
-          "dapp_key"
-        ],
+        "keys": ["dapp_key"],
         "offchain": false
       }
     }
@@ -80,6 +76,6 @@
       ]
     }
   ],
-  "package_id": "0x0caa205cfa2264f04d434fb440b00f47faaea2c623a541fba4adbc84b3ed0351",
-  "start_checkpoint": "94"
+  "package_id": "0xe1af42caeabc09880f223a94975a2a6483953b32878921a94543d84d38469573",
+  "start_checkpoint": "90"
 }

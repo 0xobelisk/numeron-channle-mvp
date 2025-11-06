@@ -14,7 +14,7 @@
     "prod:localnet": "pnpm config:store localnet && pnpm run indexer",
     "prod:testnet": "pnpm config:store testnet && pnpm run indexer",
     "schemagen": "pnpm dubhe schemagen",
-    "setup:localnet": "pnpm account:gen && pnpm faucet localnet && pnpm run deploy localnet && pnpm run config:store localnet && pnpm run indexer --force",
+    "setup:localnet": "pnpm account:gen && pnpm faucet localnet && pnpm run deploy localnet && pnpm run config:store localnet",
     "setup:testnet": "pnpm account:gen && pnpm check-balance testnet && pnpm run deploy testnet && pnpm run config:store testnet && pnpm run indexer --force",
     "start:localnet": "pnpm dubhe node",
     "type-check": "tsc --noEmit",

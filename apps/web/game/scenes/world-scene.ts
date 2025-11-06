@@ -129,6 +129,9 @@ export class WorldScene extends BaseScene {
   schemaId: string;
   subscription: WebSocket;
   #otherPlayers: Map<string, Player>;
+  #transactionFeedContainer: Phaser.GameObjects.Container;
+  #transactionFeedTexts: Phaser.GameObjects.Text[];
+  #maxFeedItems: number = 8;
 
   constructor() {
     super({
@@ -388,6 +391,9 @@ export class WorldScene extends BaseScene {
 
     this.#specialEncounterTileImageGameObjectGroup = this.add.group({ classType: Phaser.GameObjects.Image });
 
+    // Initialize transaction feed display
+    this.#createTransactionFeed();
+
     // const hasEncounter = await dataManager.hasEncounter();
     // if (hasEncounter) {
     // }
@@ -555,6 +561,13 @@ export class WorldScene extends BaseScene {
             console.log(`Table: ${change.tableId}`);
             if (change.data) {
               const data = Struct.toJson(change.data);
+              console.log('Suceess submit transaction', data['last_update_digest']);
+
+              // Add transaction to feed display
+              if (data['last_update_digest']) {
+                this.#addTransactionToFeed(data['last_update_digest'], change.tableId);
+              }
+
               console.log(`Data: ${JSON.stringify(data, null, 2)}`);
 
               // Handle position updates for other players
@@ -1803,5 +1816,116 @@ export class WorldScene extends BaseScene {
   // 添加公共方法供其他类检查战斗状态
   isWildMonsterEncountered(): boolean {
     return this.#wildMonsterEncountered;
+  }
+
+  /**
+   * Create transaction feed display in top-right corner
+   */
+  #createTransactionFeed() {
+    // Create container for the transaction feed
+    this.#transactionFeedContainer = this.add.container(0, 0);
+    this.#transactionFeedContainer.setScrollFactor(0);
+    this.#transactionFeedContainer.setDepth(1000);
+
+    // Create background rectangle with transparency
+    const feedWidth = 400;
+    const feedHeight = 300;
+    const padding = 10;
+
+    // Position in top-right corner (accounting for camera zoom)
+    const x = this.cameras.main.width / this.cameras.main.zoom - feedWidth - padding;
+    const y = padding;
+
+    const background = this.add.rectangle(0, 0, feedWidth, feedHeight, 0x000000, 0.6);
+    background.setOrigin(0, 0);
+    background.setStrokeStyle(2, 0x00ff00, 0.8);
+
+    // Add title
+    const title = this.add
+      .text(feedWidth / 2, 15, 'Transaction Feed', {
+        fontSize: '16px',
+        color: '#00ff00',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5, 0);
+
+    this.#transactionFeedContainer.add([background, title]);
+    this.#transactionFeedContainer.setPosition(x, y);
+
+    // Initialize empty text array
+    this.#transactionFeedTexts = [];
+  }
+
+  /**
+   * Add a transaction to the feed display
+   * @param digest - Transaction digest to display
+   * @param tableId - Optional table ID to display
+   */
+  #addTransactionToFeed(digest: string, tableId?: string) {
+    if (!this.#transactionFeedContainer) {
+      return;
+    }
+
+    const feedWidth = 400;
+    const padding = 5;
+    const lineHeight = 28;
+    const startY = 45;
+
+    // Remove oldest item if at max capacity
+    if (this.#transactionFeedTexts.length >= this.#maxFeedItems) {
+      const oldestText = this.#transactionFeedTexts.shift();
+      if (oldestText) {
+        oldestText.destroy();
+      }
+    }
+
+    // Move existing texts down
+    this.#transactionFeedTexts.forEach((text, index) => {
+      text.setY(startY + index * lineHeight);
+      // Fade out older items
+      const alpha = 1 - index * 0.1;
+      text.setAlpha(Math.max(alpha, 0.3));
+    });
+
+    // Create timestamp
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    // Truncate digest for display
+    const shortDigest = digest.substring(0, 10) + '...' + digest.substring(digest.length - 6);
+
+    // Format display text
+    let displayText = `[${timeStr}] ${shortDigest}`;
+    if (tableId) {
+      displayText = `[${timeStr}] ${tableId}\n  ${shortDigest}`;
+    }
+
+    // Create new text for this transaction
+    const newText = this.add
+      .text(padding, startY, displayText, {
+        fontSize: '12px',
+        color: '#00ff00',
+        fontFamily: 'monospace',
+        wordWrap: { width: feedWidth - padding * 2 },
+      })
+      .setOrigin(0, 0)
+      .setAlpha(1);
+
+    // Add to container and array
+    this.#transactionFeedContainer.add(newText);
+    this.#transactionFeedTexts.push(newText);
+
+    // Add fade-in animation for the new item
+    this.tweens.add({
+      targets: newText,
+      alpha: { from: 0, to: 1 },
+      duration: 300,
+      ease: 'Power2',
+    });
   }
 }
