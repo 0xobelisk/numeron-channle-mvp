@@ -13,8 +13,8 @@
   public(package) fun run(dapp_hub: &mut DappHub, ctx: &mut TxContext) { 
     map_system::force_register(dapp_hub, string(b"0x76e2af4ffd1dbb031046eb9a894655c7961938224a580d432f820287cab52385"), 1, 1, ctx);
     map_system::force_register(dapp_hub, string(b"0x6297d4cdb8e9df9db6be6988cab67cd7b75b51aaf777c3bf66093a9458a92154"), 2, 1, ctx);
-    map_system::force_register(dapp_hub, string(b"0xcdd077770ceb5271e42289ee1a9b3a19442f445d"), 3, 5, ctx);
-    map_system::force_register(dapp_hub, string(b"3vy8k1NAc3Q9EPvqrAuS4DG4qwbgVqfxznEdtcrL743L"), 7, 1, ctx);
+    map_system::force_register(dapp_hub, string(b"0xF464Dab2f6386EA829f6a15cBE6a6267d01F91Be"), 3, 5, ctx);
+    map_system::force_register(dapp_hub, string(b"FoaSmLuvwmWWYTqnQQoE6wpAALQczJqgebhtV1v67DLm"), 7, 1, ctx);
   }
 
 }

@@ -9,11 +9,11 @@ importers:
   .:
     devDependencies:
       '@0xobelisk/sui-cli':
-        specifier: 1.2.0-pre.84
-        version: 1.2.0-pre.84
+        specifier: 1.2.0-pre.86
+        version: 1.2.0-pre.86
       '@0xobelisk/sui-common':
-        specifier: 1.2.0-pre.84
-        version: 1.2.0-pre.84
+        specifier: 1.2.0-pre.86
+        version: 1.2.0-pre.86
       '@workspace/eslint-config':
         specifier: workspace:*
         version: link:packages/eslint-config
@@ -36,20 +36,20 @@ importers:
   apps/web:
     dependencies:
       '@0xobelisk/graphql-client':
-        specifier: ^1.2.0-pre.84
-        version: 1.2.0-pre.84(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
+        specifier: ^1.2.0-pre.86
+        version: 1.2.0-pre.86(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
       '@0xobelisk/grpc-client':
-        specifier: ^1.2.0-pre.84
-        version: 1.2.0-pre.84
+        specifier: ^1.2.0-pre.86
+        version: 1.2.0-pre.86
       '@0xobelisk/sui-cli':
-        specifier: ^1.2.0-pre.84
-        version: 1.2.0-pre.84(@types/node@20.19.24)
+        specifier: ^1.2.0-pre.86
+        version: 1.2.0-pre.86(@types/node@20.19.24)
       '@0xobelisk/sui-client':
-        specifier: ^1.2.0-pre.84
-        version: 1.2.0-pre.84(typescript@5.9.3)
+        specifier: ^1.2.0-pre.86
+        version: 1.2.0-pre.86(typescript@5.9.3)
       '@0xobelisk/sui-common':
-        specifier: ^1.2.0-pre.84
-        version: 1.2.0-pre.84
+        specifier: ^1.2.0-pre.86
+        version: 1.2.0-pre.86
       '@ai-sdk/deepseek':
         specifier: ^0.2.14
         version: 0.2.16(zod@3.25.76)
@@ -163,14 +163,14 @@ importers:
   packages/contracts:
     dependencies:
       '@0xobelisk/sui-cli':
-        specifier: ^1.2.0-pre.84
-        version: 1.2.0-pre.84(@types/node@18.19.130)
+        specifier: ^1.2.0-pre.86
+        version: 1.2.0-pre.86(@types/node@18.19.130)
       '@0xobelisk/sui-client':
-        specifier: ^1.2.0-pre.84
-        version: 1.2.0-pre.84(typescript@5.9.3)
+        specifier: ^1.2.0-pre.86
+        version: 1.2.0-pre.86(typescript@5.9.3)
       '@0xobelisk/sui-common':
-        specifier: ^1.2.0-pre.84
-        version: 1.2.0-pre.84
+        specifier: ^1.2.0-pre.86
+        version: 1.2.0-pre.86
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
@@ -384,25 +384,25 @@ packages:
       graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
       typescript: ^5.0.0
 
-  '@0xobelisk/graphql-client@1.2.0-pre.84':
-    resolution: {integrity: sha512-bpJD/w9eilEpVrv2m34z3L7I3Nmk0onrId6aKKiJISFWba5ofEWYcmVM9wANLfHVx11MR1Qnx6Pjw8ZgIsJ8lQ==}
+  '@0xobelisk/graphql-client@1.2.0-pre.86':
+    resolution: {integrity: sha512-nkXqywuhwIHchAjRIkDbY7PiyeGxCUP76tuWOlOdc8CJj1a7KmkdgWAloQrQrqCWL0IFx5E9wFimgZMpwyKSqA==}
     engines: {node: '>=22.0.0'}
 
-  '@0xobelisk/grpc-client@1.2.0-pre.84':
-    resolution: {integrity: sha512-oHqKyD7o5xU5/ONrZneUXbPdQSkAkLYP+ff4G0DU32vSvCe0kuyz0F8GSBd7fytWBQq6ntMXSFFld7UCkiVvAw==}
+  '@0xobelisk/grpc-client@1.2.0-pre.86':
+    resolution: {integrity: sha512-p08FHxM6hDOuMXCYkEo0485+Na/dMZEMrUcnB3u1PrXubF+KO/ELgHw/RtKM2N7bg0ZfjIds1Tf5vAAJaT+U/A==}
     engines: {node: '>=22.0.0'}
 
-  '@0xobelisk/sui-cli@1.2.0-pre.84':
-    resolution: {integrity: sha512-n+dvuUh+AwBvdnqFfyVF9fq63Lhoc3QDuRFenyOkIFNMBKRIpkxKqdML3ulrdfjh8BMycWdvf9VdWq3cwOQU5w==}
+  '@0xobelisk/sui-cli@1.2.0-pre.86':
+    resolution: {integrity: sha512-LHK8wHxbyZq8j7ZlcTvfzoynu1E53+j3GpCJBmgDh4RTTlF/ZC1f7qBlF1Eln3zxSBF1HC4Ji2ygmfHqL1h75Q==}
     engines: {node: '>=22.0.0'}
     hasBin: true
 
-  '@0xobelisk/sui-client@1.2.0-pre.84':
-    resolution: {integrity: sha512-T0lSrBJ9tkG16eXNZxJGTnEKrTIPtUR1xuuMTnLjWrvQrnJnGHaX+lGqlAoZxtsVBlYn6pE1ANQATjkBHaGTow==}
+  '@0xobelisk/sui-client@1.2.0-pre.86':
+    resolution: {integrity: sha512-Ro0Mm69gN15LoGQMaO0d4JtuvR5p48VwmG56hKv07cur0xJBsVwGtmXb47u+MlLyaclfCfAwWIpVK1HKzG5ArA==}
     engines: {node: '>=22.0.0'}
 
-  '@0xobelisk/sui-common@1.2.0-pre.84':
-    resolution: {integrity: sha512-ppUAuuyqLSI4gy7P/hRsnXyUVslI/+JQa7k1pddai6Xa6lYqhM325+sGtCU+1lSDMjl7KsYYLgNTJMZsvQY6YA==}
+  '@0xobelisk/sui-common@1.2.0-pre.86':
+    resolution: {integrity: sha512-+hR5ee2g8v7Oikr1zXWCe7che4LYQbOHfHteApYUCCCUti4yGxRY916eTAiZ/FkhI8EHrrs2O86I/mDUt0z1HQ==}
     engines: {node: '>=22.0.0'}
 
   '@adraffy/ens-normalize@1.11.0':
@@ -5170,7 +5170,7 @@ snapshots:
       graphql: 16.12.0
       typescript: 5.9.3
 
-  '@0xobelisk/graphql-client@1.2.0-pre.84(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)':
+  '@0xobelisk/graphql-client@1.2.0-pre.86(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typescript@5.9.3)':
     dependencies:
       '@apollo/client': 3.14.0(@types/react@19.2.2)(graphql@16.12.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.12.0)
@@ -5197,16 +5197,16 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@0xobelisk/grpc-client@1.2.0-pre.84':
+  '@0xobelisk/grpc-client@1.2.0-pre.86':
     dependencies:
       '@protobuf-ts/grpcweb-transport': 2.11.1
       '@protobuf-ts/runtime': 2.11.1
       '@protobuf-ts/runtime-rpc': 2.11.1
 
-  '@0xobelisk/sui-cli@1.2.0-pre.84':
+  '@0xobelisk/sui-cli@1.2.0-pre.86':
     dependencies:
-      '@0xobelisk/sui-client': 1.2.0-pre.84(typescript@5.9.3)
-      '@0xobelisk/sui-common': 1.2.0-pre.84
+      '@0xobelisk/sui-client': 1.2.0-pre.86(typescript@5.9.3)
+      '@0xobelisk/sui-common': 1.2.0-pre.86
       '@mysten/sui': 1.35.0(typescript@5.9.3)
       '@types/wait-on': 5.3.4
       axios: 1.13.2
@@ -5236,10 +5236,10 @@ snapshots:
       - debug
       - supports-color
 
-  '@0xobelisk/sui-cli@1.2.0-pre.84(@types/node@18.19.130)':
+  '@0xobelisk/sui-cli@1.2.0-pre.86(@types/node@18.19.130)':
     dependencies:
-      '@0xobelisk/sui-client': 1.2.0-pre.84(typescript@5.9.3)
-      '@0xobelisk/sui-common': 1.2.0-pre.84
+      '@0xobelisk/sui-client': 1.2.0-pre.86(typescript@5.9.3)
+      '@0xobelisk/sui-common': 1.2.0-pre.86
       '@mysten/sui': 1.35.0(typescript@5.9.3)
       '@types/wait-on': 5.3.4
       axios: 1.13.2
@@ -5269,10 +5269,10 @@ snapshots:
       - debug
       - supports-color
 
-  '@0xobelisk/sui-cli@1.2.0-pre.84(@types/node@20.19.24)':
+  '@0xobelisk/sui-cli@1.2.0-pre.86(@types/node@20.19.24)':
     dependencies:
-      '@0xobelisk/sui-client': 1.2.0-pre.84(typescript@5.9.3)
-      '@0xobelisk/sui-common': 1.2.0-pre.84
+      '@0xobelisk/sui-client': 1.2.0-pre.86(typescript@5.9.3)
+      '@0xobelisk/sui-common': 1.2.0-pre.86
       '@mysten/sui': 1.35.0(typescript@5.9.3)
       '@types/wait-on': 5.3.4
       axios: 1.13.2
@@ -5302,7 +5302,7 @@ snapshots:
       - debug
       - supports-color
 
-  '@0xobelisk/sui-client@1.2.0-pre.84(typescript@5.9.3)':
+  '@0xobelisk/sui-client@1.2.0-pre.86(typescript@5.9.3)':
     dependencies:
       '@mysten/bcs': 1.6.3
       '@mysten/sui': 1.35.0(typescript@5.9.3)
@@ -5328,7 +5328,7 @@ snapshots:
       - '@gql.tada/vue-support'
       - typescript
 
-  '@0xobelisk/sui-common@1.2.0-pre.84':
+  '@0xobelisk/sui-common@1.2.0-pre.86':
     dependencies:
       chalk: 5.6.2
       debug: 4.4.3
@@ -5985,7 +5985,7 @@ snapshots:
 
   '@mysten/wallet-standard@0.19.6(typescript@5.9.3)':
     dependencies:
-      '@mysten/sui': 1.35.0(typescript@5.9.3)
+      '@mysten/sui': 1.44.0(typescript@5.9.3)
       '@wallet-standard/core': 1.1.1
     transitivePeerDependencies:
       - '@gql.tada/svelte-support'
@@ -7031,7 +7031,7 @@ snapshots:
 
   '@types/wait-on@5.3.4':
     dependencies:
-      '@types/node': 20.19.24
+      '@types/node': 22.19.0
 
   '@types/webfontloader@1.6.38': {}
 
@@ -8104,7 +8104,7 @@ snapshots:
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
       eslint-import-resolver-typescript: 3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.46.3(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1)
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.46.3(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.46.3(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.46.3(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1)
       eslint-plugin-jsx-a11y: 6.10.2(eslint@8.57.1)
       eslint-plugin-react: 7.37.5(eslint@8.57.1)
       eslint-plugin-react-hooks: 5.2.0(eslint@8.57.1)
@@ -8142,7 +8142,7 @@ snapshots:
       tinyglobby: 0.2.15
       unrs-resolver: 1.11.1
     optionalDependencies:
-      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.46.3(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1)
+      eslint-plugin-import: 2.32.0(@typescript-eslint/parser@8.46.3(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.46.3(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1)
     transitivePeerDependencies:
       - supports-color
 
@@ -8157,7 +8157,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.46.3(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1)(eslint@8.57.1):
+  eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.46.3(eslint@8.57.1)(typescript@5.9.3))(eslint-import-resolver-typescript@3.10.1(eslint-plugin-import@2.32.0(@typescript-eslint/parser@8.46.3(eslint@8.57.1)(typescript@5.9.3))(eslint@8.57.1))(eslint@8.57.1))(eslint@8.57.1):
     dependencies:
       '@rtsao/scc': 1.1.0
       array-includes: 3.1.9

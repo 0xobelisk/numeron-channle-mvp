@@ -1,10 +1,10 @@
 {
   "projectName": "numeron",
   "network": "localnet",
-  "startCheckpoint": "90",
-  "packageId": "0xe1af42caeabc09880f223a94975a2a6483953b32878921a94543d84d38469573",
-  "dappHub": "",
-  "upgradeCap": "0x00fbef5b855645c8eaaa343525775f51cd12056d23a44b2e714747c292c9c03b",
+  "startCheckpoint": "141",
+  "packageId": "0x25e17bbd625e4edfbe819a6e509cc012dc5a47466e69485b540797e19f76d499",
+  "dappHub": "0xe973a9025509c6b4e3597a0e85b8e5aa4c2a641f0bba0c0556e230c93bb6d851",
+  "upgradeCap": "0x9ff96d5bf6134582a60a030b0c471572ba13b1cdb32ca3799afd9e88ed379f13",
   "version": 1,
   "components": {},
   "resources": {
